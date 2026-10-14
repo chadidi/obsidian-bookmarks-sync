@@ -131,7 +131,7 @@ async function readPlaces(dbPath: string, options: FirefoxOptions, log: Logger):
         // A torn snapshot (Firefox checkpointed mid-copy) is rare; retry once.
         if (attempt === 2 || !/malformed|corrupt|not a database/i.test(errorMessage(err))) throw err;
         log.warn("places.sqlite snapshot looked inconsistent; retrying once");
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => window.setTimeout(r, 500));
       }
     }
 

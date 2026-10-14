@@ -21,14 +21,14 @@ export function decodeLz4Block(src: Uint8Array, outputSize: number): Uint8Array 
   let d = 0;
 
   while (s < src.length) {
-    const token = src[s++];
+    const token = src[s++] ?? 0;
 
     let literalLength = token >> 4;
     if (literalLength === 15) {
       let b: number;
       do {
         if (s >= src.length) throw new Error("corrupt LZ4 data (truncated literal length)");
-        b = src[s++];
+        b = src[s++] ?? 0;
         literalLength += b;
       } while (b === 255);
     }
@@ -41,7 +41,7 @@ export function decodeLz4Block(src: Uint8Array, outputSize: number): Uint8Array 
 
     if (s >= src.length) break; // the last sequence has literals only
 
-    const offset = src[s] | (src[s + 1] << 8);
+    const offset = (src[s] ?? 0) | ((src[s + 1] ?? 0) << 8);
     s += 2;
     if (offset === 0 || offset > d) throw new Error("corrupt LZ4 data (invalid match offset)");
 
@@ -50,7 +50,7 @@ export function decodeLz4Block(src: Uint8Array, outputSize: number): Uint8Array 
       let b: number;
       do {
         if (s >= src.length) throw new Error("corrupt LZ4 data (truncated match length)");
-        b = src[s++];
+        b = src[s++] ?? 0;
         matchLength += b;
       } while (b === 255);
     }
@@ -59,7 +59,7 @@ export function decodeLz4Block(src: Uint8Array, outputSize: number): Uint8Array 
 
     // Byte-by-byte on purpose: matches may overlap their own output.
     let from = d - offset;
-    for (let i = 0; i < matchLength; i++) dst[d++] = dst[from++];
+    for (let i = 0; i < matchLength; i++) dst[d++] = dst[from++] ?? 0;
   }
 
   if (d !== outputSize) throw new Error(`corrupt LZ4 data (expected ${outputSize} bytes, got ${d})`);

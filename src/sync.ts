@@ -51,7 +51,7 @@ function filterByRootFolder(entries: BookmarkEntry[], rootFolder: string, log: L
   const lower = segments.map((s) => s.toLowerCase());
   const filtered = entries.filter((e) => {
     if (e.folderPath.length < lower.length) return false;
-    return lower.every((seg, i) => e.folderPath[i].toLowerCase() === seg);
+    return lower.every((seg, i) => e.folderPath[i]?.toLowerCase() === seg);
   });
 
   log.debug(`Root-folder filter "${rootFolder}": ${entries.length} → ${filtered.length} bookmarks`);
@@ -97,6 +97,7 @@ export class SyncEngine {
     let changed = false;
     for (const key of Object.keys(index)) {
       const p = index[key];
+      if (!p) continue;
       if (p === oldPath) {
         index[key] = newPath;
         changed = true;
@@ -262,10 +263,14 @@ export class SyncEngine {
 
     if (hasOwn(index, key)) {
       const tracked = index[key];
-      const file = vault.getAbstractFileByPath(tracked);
-      if (file instanceof TFile) return { path: tracked, file };
-      delete index[key]; // note was deleted: treat the bookmark as new again
-      if (owner.get(tracked) === key) owner.delete(tracked);
+      if (tracked) {
+        const file = vault.getAbstractFileByPath(tracked);
+        if (file instanceof TFile) return { path: tracked, file };
+        delete index[key]; // note was deleted: treat the bookmark as new again
+        if (owner.get(tracked) === key) owner.delete(tracked);
+      } else {
+        delete index[key];
+      }
     }
 
     const base = sanitizeFileName(entry.title || fallbackTitle(entry.url));
@@ -308,7 +313,8 @@ export class SyncEngine {
   private pruneIndex(): void {
     const index = this.host.index;
     for (const key of Object.keys(index)) {
-      if (!(this.app.vault.getAbstractFileByPath(index[key]) instanceof TFile)) delete index[key];
+      const p = index[key];
+      if (!p || !(this.app.vault.getAbstractFileByPath(p) instanceof TFile)) delete index[key];
     }
   }
 }

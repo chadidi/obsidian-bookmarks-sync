@@ -96,7 +96,8 @@ export function findUnknownPlaceholders(template: string): string[] {
   const known = new Set<string>(PLACEHOLDERS);
   const unknown = new Set<string>();
   for (const m of template.matchAll(PLACEHOLDER_RE)) {
-    if (!known.has(m[1].toLowerCase())) unknown.add(`{{${m[1]}}}`);
+    const placeholder = m[1];
+    if (placeholder && !known.has(placeholder.toLowerCase())) unknown.add(`{{${placeholder}}}`);
   }
   return [...unknown];
 }

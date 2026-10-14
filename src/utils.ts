@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 
 const ZERO_WIDTH = /[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g;
 const REPLACE_WITH_DASH = /[\\/:|]+/g;
+// eslint-disable-next-line no-control-regex -- control characters are intentionally stripped from filenames
 const STRIP = /[*?"<>#^[\]\u0000-\u001f\u007f]/g;
 const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
@@ -44,6 +45,7 @@ export function sanitizeFileName(raw: string, maxLength = 100): string {
  */
 export function sanitizeFolderName(raw: string, maxLength = 100): string {
   const FOLDER_REPLACE_WITH_DASH = /[\\/]+/g;
+  // eslint-disable-next-line no-control-regex -- control characters are intentionally stripped from folder names
   const FOLDER_STRIP = /[:*?"<>|\u0000-\u001f\u007f]/g;
 
   let name = raw
@@ -69,7 +71,7 @@ export function shortHash(value: string, length = 6): string {
 
 /** Lets the renderer paint and handle input between batches of work. */
 export function yieldToUi(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  return new Promise((resolve) => window.setTimeout(resolve, 0));
 }
 
 export function joinVaultPath(folder: string, fileName: string): string {

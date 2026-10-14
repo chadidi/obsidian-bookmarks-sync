@@ -27,7 +27,11 @@ function parseXmlPlistNode(el: Element): unknown {
       const obj: PlistDict = {};
       const kids = Array.from(el.children);
       for (let i = 0; i + 1 < kids.length; i += 2) {
-        obj[kids[i].textContent ?? ""] = parseXmlPlistNode(kids[i + 1]);
+        const keyEl = kids[i];
+        const valEl = kids[i + 1];
+        if (keyEl && valEl) {
+          obj[keyEl.textContent ?? ""] = parseXmlPlistNode(valEl);
+        }
       }
       return obj;
     }

@@ -53,7 +53,9 @@ export async function readChromeBookmarks(filePath: string, log: Logger): Promis
 
   let doc: { roots?: Record<string, unknown> };
   try {
-    doc = JSON.parse(buffer.toString("utf8").replace(/^\uFEFF/, ""));
+    doc = JSON.parse(buffer.toString("utf8").replace(/^\uFEFF/, "")) as {
+      roots?: Record<string, unknown>;
+    };
   } catch (err) {
     throw new BookmarkSourceError(
       `${filePath} is not valid JSON. Is it really a Chrome/Chromium "Bookmarks" file?`,
