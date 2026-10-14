@@ -1,10 +1,10 @@
 import * as fs from "fs";
-import { App, Notice, PluginSettingTab, Setting, debounce } from "obsidian";
+import { App, type DropdownComponent, PluginSettingTab, Setting, type TextAreaComponent, debounce } from "obsidian";
 import type BrowserBookmarksPlugin from "./main";
 import { defaultBrowserPath, resolveSourcePath } from "./paths";
-import { DEFAULT_TEMPLATE } from "./settings";
+import { FULL_TEMPLATE, SIMPLE_TEMPLATE } from "./settings";
 import { findUnknownPlaceholders } from "./template";
-import { BROWSER_LABELS, type BrowserType } from "./types";
+import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from "./types";
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
@@ -222,6 +222,39 @@ export class BookmarkSettingTab extends PluginSettingTab {
     /* ---------------- Template ---------------- */
     new Setting(containerEl).setName("Note template").setHeading();
 
+    let dropdownComponent: DropdownComponent | null = null;
+    let textAreaComponent: TextAreaComponent | null = null;
+    let isProgrammaticChange = false;
+
+    new Setting(containerEl)
+      .setName("Template preset")
+      .setDesc("Choose between predefined templates (Simple, Full) or customize your own.")
+      .addDropdown((dd) => {
+        dropdownComponent = dd;
+        dd.addOption("simple", "Simple")
+          .addOption("full", "Full")
+          .addOption("custom", "Custom")
+          .setValue(settings.templatePreset)
+          .onChange(async (value) => {
+            const preset = value as TemplatePreset;
+            settings.templatePreset = preset;
+            if (preset === "simple") {
+              settings.template = SIMPLE_TEMPLATE;
+            } else if (preset === "full") {
+              settings.template = FULL_TEMPLATE;
+            } else {
+              settings.template = settings.customTemplate;
+            }
+            if (textAreaComponent) {
+              isProgrammaticChange = true;
+              textAreaComponent.setValue(settings.template);
+              isProgrammaticChange = false;
+            }
+            refreshWarning();
+            await this.plugin.saveSettings();
+          });
+      });
+
     const templateSetting = new Setting(containerEl)
       .setName("Template")
       .setDesc(
@@ -255,7 +288,16 @@ export class BookmarkSettingTab extends PluginSettingTab {
     };
 
     templateSetting.addTextArea((area) => {
+      textAreaComponent = area;
       area.setValue(settings.template).onChange((value) => {
+        if (isProgrammaticChange) return;
+        if (settings.templatePreset !== "custom") {
+          settings.templatePreset = "custom";
+          if (dropdownComponent) {
+            dropdownComponent.setValue("custom");
+          }
+        }
+        settings.customTemplate = value;
         settings.template = value;
         refreshWarning();
         save();
@@ -267,7 +309,9 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Default date format")
-      .setDesc("moment.js format used by {{date}} and {{synced}} when they have no explicit format. {{date}} is the day the bookmark was added in the browser (the sync date if the browser doesn't record it, as in Safari).")
+      .setDesc(
+        "moment.js format used by {{date}} and {{synced}} when they have no explicit format. {{date}} is the day the bookmark was added in the browser (the sync date if the browser doesn't record it, as in Safari).",
+      )
       .addText((text) =>
         text
           .setPlaceholder("YYYY-MM-DD")
@@ -276,18 +320,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
             settings.dateFormat = value.trim() || "YYYY-MM-DD";
             save();
           }),
-      );
-
-    new Setting(containerEl)
-      .setName("Reset template")
-      .setDesc("Restore the built-in template. Your current template will be replaced.")
-      .addButton((btn) =>
-        btn.setButtonText("Reset").onClick(async () => {
-          settings.template = DEFAULT_TEMPLATE;
-          await this.plugin.saveSettings();
-          this.display();
-          new Notice("Template reset to default.");
-        }),
       );
 
     /* ---------------- Diagnostics ---------------- */

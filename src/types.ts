@@ -43,6 +43,8 @@ export interface SyncResult {
   durationMs: number;
 }
 
+export type TemplatePreset = "simple" | "full" | "custom";
+
 export interface BookmarkSettings {
   browser: BrowserType;
   /** Per-browser source path. Empty string = use the auto-detected default. */
@@ -67,6 +69,8 @@ export interface BookmarkSettings {
   applyToExisting: boolean;
   /** moment.js format used by {{date}} and {{synced}} when no explicit format is given. */
   dateFormat: string;
+  templatePreset: TemplatePreset;
+  customTemplate: string;
   template: string;
   debug: boolean;
   /** Automatic syncs stay disabled until one manual sync has succeeded. */
