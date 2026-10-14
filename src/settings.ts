@@ -1,4 +1,4 @@
-import type { BookmarkSettings, BrowserType } from "./types";
+import type { BookmarkSettings, BrowserType, FolderStructure } from "./types";
 
 export const DEFAULT_TEMPLATE = `---
 title: {{title|yaml}}
@@ -22,6 +22,8 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   paths: { chrome: "", firefox: "", safari: "" },
   sqlite3Path: "sqlite3",
   targetFolder: "Bookmarks",
+  rootFolder: "",
+  folderStructure: "folders",
   intervalMinutes: 60,
   syncOnStartup: false,
   applyToExisting: false,
@@ -48,5 +50,8 @@ export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | n
   if (typeof merged.template !== "string" || !merged.template.trim()) merged.template = DEFAULT_TEMPLATE;
   if (!merged.dateFormat) merged.dateFormat = DEFAULT_SETTINGS.dateFormat;
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
+  if (typeof merged.rootFolder !== "string") merged.rootFolder = "";
+  const FOLDER_STRUCTURES: FolderStructure[] = ["folders", "flat"];
+  if (!FOLDER_STRUCTURES.includes(merged.folderStructure)) merged.folderStructure = "folders";
   return merged;
 }

@@ -32,6 +32,37 @@ export function sanitizeFileName(raw: string, maxLength = 100): string {
   return name;
 }
 
+/**
+ * Sanitizes a folder name segment for use in a vault path.
+ * Uses lighter rules than sanitizeFileName — characters like #, ^, [ ] are
+ * perfectly legal in folder names and must not be stripped (they only matter
+ * for [[wikilinks]] in file names).
+ *  - `\ /` become "-" (path separators would break the hierarchy)
+ *  - `: * ? " < > |` and control characters are removed (OS / Windows restrictions)
+ *  - Leading dots and trailing dots/spaces are trimmed
+ *  - Reserved Windows device names are prefixed with "_"
+ */
+export function sanitizeFolderName(raw: string, maxLength = 100): string {
+  const FOLDER_REPLACE_WITH_DASH = /[\\/]+/g;
+  const FOLDER_STRIP = /[:*?"<>|\u0000-\u001f\u007f]/g;
+
+  let name = raw
+    .normalize("NFC")
+    .replace(ZERO_WIDTH, "")
+    .replace(FOLDER_REPLACE_WITH_DASH, "-")
+    .replace(FOLDER_STRIP, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  name = name.replace(/^\.+/, "");
+  name = Array.from(name).slice(0, maxLength).join("");
+  name = name.replace(/[. ]+$/, "").trim();
+
+  if (!name) name = "Untitled";
+  if (WINDOWS_RESERVED.test(name)) name = `_${name}`;
+  return name;
+}
+
 export function shortHash(value: string, length = 6): string {
   return createHash("sha1").update(value).digest("hex").slice(0, length);
 }

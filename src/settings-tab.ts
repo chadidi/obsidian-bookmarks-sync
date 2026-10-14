@@ -103,6 +103,55 @@ export class BookmarkSettingTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(containerEl)
+      .setName("Root bookmark folder")
+      .setDesc(
+        createFragment((frag) => {
+          frag.appendText("Sync only bookmarks inside a specific browser folder. Use ");
+          frag.createEl("code", { text: "/" });
+          frag.appendText(" to separate nested folders, e.g. ");
+          frag.createEl("code", { text: "Bookmarks Bar/Work" });
+          frag.appendText(". Leave empty to sync all bookmarks. Matching is case-insensitive.");
+        }),
+      )
+      .addText((text) => {
+        text
+          .setPlaceholder("e.g. Bookmarks Bar/Work (leave empty for all)")
+          .setValue(settings.rootFolder)
+          .onChange((value) => {
+            settings.rootFolder = value.trim();
+            save();
+          });
+        text.inputEl.addClass("bb-wide-input");
+      })
+      .addExtraButton((btn) =>
+        btn
+          .setIcon("x")
+          .setTooltip("Clear — sync all bookmarks")
+          .onClick(async () => {
+            settings.rootFolder = "";
+            await this.plugin.saveSettings();
+            this.display();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Folder structure")
+      .setDesc(
+        "Mirror: notes are placed in subfolders that match your browser's folder hierarchy inside the target folder. " +
+        "Flat: every note goes directly into the target folder with no subfolders created.",
+      )
+      .addDropdown((dd) =>
+        dd
+          .addOption("folders", "Mirror browser folders (default)")
+          .addOption("flat", "Flat — all notes in one folder")
+          .setValue(settings.folderStructure)
+          .onChange(async (value) => {
+            settings.folderStructure = value as "folders" | "flat";
+            await this.plugin.saveSettings();
+          }),
+      );
+
     const modeSetting = new Setting(containerEl).setName("Apply templates to existing bookmarks");
     const describeMode = (apply: boolean) =>
       modeSetting.setDesc(

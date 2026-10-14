@@ -2,6 +2,13 @@ import type { Logger } from "./logger";
 
 export type BrowserType = "chrome" | "firefox" | "safari";
 
+/**
+ * How bookmark notes are laid out in the vault:
+ * - "folders": mirror the browser's folder hierarchy as real vault subfolders (default)
+ * - "flat": every note lands directly in targetFolder, no subfolders created
+ */
+export type FolderStructure = "folders" | "flat";
+
 export const BROWSER_LABELS: Record<BrowserType, string> = {
   chrome: "Google Chrome",
   firefox: "Mozilla Firefox",
@@ -43,6 +50,16 @@ export interface BookmarkSettings {
   /** Firefox only: sqlite3 executable used to read places.sqlite. */
   sqlite3Path: string;
   targetFolder: string;
+  /**
+   * Slash-separated path of the browser bookmark folder to sync.
+   * Empty string = sync everything. Example: "Bookmarks Bar/Work".
+   */
+  rootFolder: string;
+  /**
+   * Whether to mirror the browser folder hierarchy as vault subfolders,
+   * or dump every note flat into targetFolder.
+   */
+  folderStructure: FolderStructure;
   /** 0 disables periodic sync. */
   intervalMinutes: number;
   syncOnStartup: boolean;

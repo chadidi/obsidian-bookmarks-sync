@@ -1,10 +1,11 @@
 import { normalizePath, TFile, TFolder, type App } from "obsidian";
 import { errorMessage } from "./errors";
+import type { Logger } from "./logger";
 import { DEFAULT_TEMPLATE } from "./settings";
 import { readBookmarks } from "./sources";
 import { findUnknownPlaceholders, renderTemplate, type DateFormatter } from "./template";
 import type { BookmarkEntry, SyncHost, SyncResult, SyncTrigger } from "./types";
-import { hasOwn, joinVaultPath, sanitizeFileName, shortHash, yieldToUi } from "./utils";
+import { hasOwn, joinVaultPath, sanitizeFileName, sanitizeFolderName, shortHash, yieldToUi } from "./utils";
 
 /** Hand control back to the UI thread every N bookmarks so a large import never freezes Obsidian. */
 const YIELD_EVERY = 25;
@@ -26,6 +27,35 @@ interface Target {
   path: string;
   /** Existing note for this bookmark, or null if a new one must be created at `path`. */
   file: TFile | null;
+}
+
+/**
+ * Parses a slash-separated folder path string into an array of trimmed, non-empty segments.
+ * e.g. "Bookmarks Bar/Work" → ["Bookmarks Bar", "Work"]
+ */
+function parseRootFolderSegments(rootFolder: string): string[] {
+  return rootFolder
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * When `rootFolder` is configured, keeps only entries whose `folderPath` starts with
+ * the given segments (case-insensitive). Empty `rootFolder` returns all entries unchanged.
+ */
+function filterByRootFolder(entries: BookmarkEntry[], rootFolder: string, log: Logger): BookmarkEntry[] {
+  const segments = parseRootFolderSegments(rootFolder);
+  if (segments.length === 0) return entries;
+
+  const lower = segments.map((s) => s.toLowerCase());
+  const filtered = entries.filter((e) => {
+    if (e.folderPath.length < lower.length) return false;
+    return lower.every((seg, i) => e.folderPath[i].toLowerCase() === seg);
+  });
+
+  log.debug(`Root-folder filter "${rootFolder}": ${entries.length} → ${filtered.length} bookmarks`);
+  return filtered;
 }
 
 export class SyncEngine {
@@ -51,7 +81,8 @@ export class SyncEngine {
     const started = Date.now();
     try {
       const { entries } = await readBookmarks(this.host.settings, this.host.log);
-      const result = await this.apply(entries);
+      const filtered = filterByRootFolder(entries, this.host.settings.rootFolder, this.host.log);
+      const result = await this.apply(filtered);
       result.durationMs = Date.now() - started;
       this.host.log.info(`Sync (${trigger}) finished`, result);
       return result;
@@ -97,6 +128,9 @@ export class SyncEngine {
     const owner = new Map<string, string>();
     for (const [key, p] of Object.entries(this.host.index)) owner.set(p, key);
 
+    // Pre-compute root folder segments once so syncEntry can strip them.
+    const rootSegments = parseRootFolderSegments(settings.rootFolder);
+
     const seen = new Set<string>();
     const syncedAt = new Date();
     let handled = 0;
@@ -113,7 +147,7 @@ export class SyncEngine {
       seen.add(key);
 
       try {
-        await this.syncEntry(entry, key, folder, template, syncedAt, owner, result);
+        await this.syncEntry(entry, key, folder, rootSegments, template, syncedAt, owner, result);
       } catch (err) {
         // Error boundary: one bad bookmark must not abort the whole sync.
         result.failed++;
@@ -129,7 +163,8 @@ export class SyncEngine {
   private async syncEntry(
     entry: BookmarkEntry,
     key: string,
-    folder: string,
+    baseFolder: string,
+    rootSegments: string[],
     template: string,
     syncedAt: Date,
     owner: Map<string, string>,
@@ -138,7 +173,11 @@ export class SyncEngine {
     const { settings, index } = this.host;
     const vault = this.app.vault;
 
-    const target = await this.resolveTarget(entry, key, folder, owner);
+    // Compute the destination folder for this entry.
+    const noteFolder = this.resolveNoteFolder(entry, baseFolder, rootSegments);
+    if (noteFolder !== baseFolder) await this.ensureFolder(noteFolder);
+
+    const target = await this.resolveTarget(entry, key, noteFolder, owner);
 
     if (target.file) {
       index[key] = target.path;
@@ -165,6 +204,26 @@ export class SyncEngine {
     index[key] = target.path;
     owner.set(target.path, key);
     result.created++;
+  }
+
+  /**
+   * When folderStructure is "folders", compute the vault subfolder that mirrors
+   * the browser folder hierarchy. The rootFolder segments are stripped from the
+   * front of entry.folderPath so they don't appear as extra nesting.
+   *
+   * e.g. baseFolder="Bookmarks", rootSegments=["Bookmarks Bar"],
+   *      entry.folderPath=["Bookmarks Bar","Work"] → "Bookmarks/Work"
+   */
+  private resolveNoteFolder(entry: BookmarkEntry, baseFolder: string, rootSegments: string[]): string {
+    const { settings } = this.host;
+    if (settings.folderStructure !== "folders") return baseFolder;
+
+    // Strip the rootFolder prefix (already validated by filterByRootFolder).
+    const subPath = entry.folderPath.slice(rootSegments.length);
+    if (subPath.length === 0) return baseFolder;
+
+    const sanitized = subPath.map((s) => sanitizeFolderName(s)).join("/");
+    return normalizePath(`${baseFolder}/${sanitized}`);
   }
 
   private render(entry: BookmarkEntry, template: string, syncedAt: Date): string {
