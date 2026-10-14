@@ -181,7 +181,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
         text.inputEl.type = "number";
         text.inputEl.min = "0";
         text
-          .setPlaceholder("60")
+          .setPlaceholder("0")
           .setValue(String(settings.intervalMinutes))
           .onChange((value) => {
             const minutes = Number(value);

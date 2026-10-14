@@ -25,7 +25,7 @@ export const PRESET_TEMPLATES: Record<"simple" | "full", string> = {
   full: FULL_TEMPLATE,
 };
 
-export const DEFAULT_TEMPLATE = FULL_TEMPLATE;
+export const DEFAULT_TEMPLATE = SIMPLE_TEMPLATE;
 
 export const DEFAULT_SETTINGS: BookmarkSettings = {
   browser: "chrome",
@@ -34,13 +34,13 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   targetFolder: "Bookmarks",
   rootFolder: "",
   folderStructure: "folders",
-  intervalMinutes: 60,
-  syncOnStartup: false,
+  intervalMinutes: 0,
+  syncOnStartup: true,
   applyToExisting: false,
   dateFormat: "YYYY-MM-DD",
-  templatePreset: "full",
+  templatePreset: "simple",
   customTemplate: FULL_TEMPLATE,
-  template: FULL_TEMPLATE,
+  template: SIMPLE_TEMPLATE,
   debug: false,
   initialSyncDone: false,
 };
@@ -62,9 +62,9 @@ export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | n
 
   const PRESETS: TemplatePreset[] = ["simple", "full", "custom"];
   if (!raw?.templatePreset || !PRESETS.includes(raw.templatePreset)) {
-    if (raw?.template === SIMPLE_TEMPLATE) {
+    if (raw?.template === SIMPLE_TEMPLATE || !raw?.template) {
       merged.templatePreset = "simple";
-    } else if (raw?.template === FULL_TEMPLATE || !raw?.template) {
+    } else if (raw?.template === FULL_TEMPLATE) {
       merged.templatePreset = "full";
     } else {
       merged.templatePreset = "custom";
