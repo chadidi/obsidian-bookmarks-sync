@@ -1,0 +1,21 @@
+{
+  "name": "obsidian-browser-bookmarks-sync",
+  "version": "1.0.0",
+  "description": "Import Safari, Chrome or Firefox bookmarks into Obsidian as individual Markdown notes.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.21.5",
+    "obsidian": "latest",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "bplist-parser": "^0.3.2"
+  }
+}

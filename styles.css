@@ -1,0 +1,26 @@
+.bb-wide-input {
+  width: 340px;
+  max-width: 100%;
+}
+
+.bb-template-setting {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--size-4-2);
+}
+
+.bb-template-setting .setting-item-control {
+  width: 100%;
+}
+
+.bb-template-setting textarea {
+  width: 100%;
+  min-height: 15em;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  resize: vertical;
+}
+
+.bb-warning {
+  color: var(--text-warning);
+}
