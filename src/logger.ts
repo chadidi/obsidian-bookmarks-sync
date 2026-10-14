@@ -7,7 +7,7 @@ export class Logger {
     if (this.isDebug()) console.debug(PREFIX, ...args);
   }
   info(...args: unknown[]): void {
-    console.log(PREFIX, ...args);
+    if (this.isDebug()) console.info(PREFIX, ...args);
   }
   warn(...args: unknown[]): void {
     console.warn(PREFIX, ...args);

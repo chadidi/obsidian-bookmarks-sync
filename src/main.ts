@@ -26,10 +26,10 @@ export default class BrowserBookmarksPlugin extends Plugin implements SyncHost {
     this.engine = new SyncEngine(this.app, this, formatWithMoment);
 
     // Manual sync: ribbon button + command palette.
-    this.addRibbonIcon("bookmark", "Sync Browser Bookmarks Now", () => void this.syncNow("manual"));
+    this.addRibbonIcon("bookmark", "Sync browser bookmarks now", () => void this.syncNow("manual"));
     this.addCommand({
-      id: "sync-browser-bookmarks-now",
-      name: "Sync Browser Bookmarks Now",
+      id: "sync-now",
+      name: "Sync browser bookmarks now",
       callback: () => void this.syncNow("manual"),
     });
 

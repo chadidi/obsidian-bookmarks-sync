@@ -1,44 +1,101 @@
-# Browser Bookmarks Sync (Obsidian plugin)
+# Browser Bookmarks Sync for Obsidian
 
-Imports Safari, Chrome or Firefox bookmarks as one Markdown note each, using your own template.
-Desktop only (it reads browser files with Node.js APIs inside Obsidian's Electron runtime).
+Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into your Obsidian vault, using your own customizable template.
 
-## Install
+![Browser Bookmarks Sync Settings](./images/screenshot.png)
 
-Build from source:
+## Features
 
-    npm install
-    npm run build          # type-checks, then bundles to main.js
+- **Multi-browser support**: Import bookmarks directly from Google Chrome (and Chromium browsers like Brave, Edge), Safari (macOS), or Mozilla Firefox.
+- **Customizable templates**: Render bookmarks into notes using presets (Simple or Full) or craft your own template with placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
+- **Frontmatter ready**: Use filters like `{{title|yaml}}` to safely format text for YAML frontmatter.
+- **Hierarchy preservation**: Mirror your browser folder tree into vault subfolders, or save all bookmarks into a flat folder.
+- **Selective folder sync**: Filter by a specific root browser folder (e.g. `Bookmarks Bar/Work`) to sync only what you want.
+- **Safe duplicate handling**: URL-based indexing ensures each URL produces a single note, even if filed in multiple folders.
+- **Flexible automation**: Sync manually on demand, automatically on startup, or at periodic intervals.
+- **Conflict-free updates**: Uses atomic vault updates so notes are modified safely without race conditions.
 
-Copy `main.js`, `manifest.json` and `styles.css` into `<vault>/.obsidian/plugins/browser-bookmarks-sync/`,
-then enable the plugin under Settings → Community plugins. (`npm run dev` rebuilds on change.)
+## Installation
+
+### Beta testing with BRAT (Recommended)
+
+You can easily install and test beta releases of this plugin using [Obsidian42 - BRAT](https://github.com/TfTHacker/obsidian42-brat):
+
+1. Install and enable the **BRAT** plugin from Obsidian's Community Plugins.
+2. Open Obsidian **Settings** → **BRAT**.
+3. Under **Beta Plugin List**, click **Add Beta plugin**.
+4. Enter the GitHub repository: `chadidi/obsidian-browser-bookmarks` (or `https://github.com/chadidi/obsidian-browser-bookmarks`).
+5. Click **Add Plugin**. BRAT will download the latest release assets (`manifest.json`, `main.js`, and `styles.css`).
+6. Go to **Settings** → **Community plugins** and enable **Browser Bookmarks Sync**.
+
+### Manual installation
+
+1. Download the latest release (`main.js`, `manifest.json`, `styles.css`) from the [Releases](https://github.com/chadidi/obsidian-browser-bookmarks/releases) page.
+2. Create a folder named `browser-bookmarks-sync` in your vault's plugin directory: `<vault>/.obsidian/plugins/browser-bookmarks-sync/`.
+3. Copy `main.js`, `manifest.json`, and `styles.css` into that folder.
+4. Reload Obsidian and enable the plugin under **Settings** → **Community plugins**.
+
+### Build from source
+
+```bash
+git clone https://github.com/chadidi/obsidian-browser-bookmarks.git
+cd obsidian-browser-bookmarks
+npm install
+npm run build
+```
+
+Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugins/browser-bookmarks-sync/`.
 
 ## First run
 
-Pick a browser, check the detected file path in settings, then run **Sync Browser Bookmarks Now**
-(ribbon icon or command palette). Automatic syncs (interval / on startup) stay disabled until one manual
-sync has succeeded, so nothing is imported by surprise.
+1. Go to **Settings** → **Browser Bookmarks Sync**.
+2. Select your browser under **Source**. The plugin will automatically detect your browser's default bookmarks file path on macOS, Windows, or Linux.
+3. Choose your target vault folder and template.
+4. Click **Sync bookmarks** (or click the bookmark ribbon icon, or run the command `Sync browser bookmarks now`).
+5. Automatic syncs (on startup or periodic) are kept disabled until one manual sync has completed successfully to prevent accidental imports.
 
-## Browsers
+## Supported browsers
 
-| Browser | Default file | Notes |
+| Browser | Default file location | Notes |
 |---|---|---|
-| Chrome | `…/Chrome/Default/Bookmarks` (macOS / Windows / Linux) | JSON. Other profiles/Chromium browsers: set the path. |
-| Safari | `~/Library/Safari/Bookmarks.plist` | Binary plist, parsed in-process with `bplist-parser`. Obsidian needs **Full Disk Access** (System Settings → Privacy & Security). Safari stores no creation date, so `{{date}}` falls back to the sync date. Reading List is excluded. |
-| Firefox | auto-detected `places.sqlite` | Read through the `sqlite3` CLI on a temp snapshot of the DB + WAL (live data). No `sqlite3` (e.g. Windows)? Point the path at a `bookmarkbackups/*.jsonlz4` file or folder – decoded natively, but only as fresh as Firefox's daily backup. |
+| **Chrome / Chromium** | `…/Chrome/Default/Bookmarks` (macOS / Windows / Linux) | JSON file. Custom profiles or Chromium browsers (e.g. Brave, Edge, Arc) can be used by providing their custom path in settings. |
+| **Safari** | `~/Library/Safari/Bookmarks.plist` (macOS) | Binary plist, parsed directly in-process. Requires granting Obsidian **Full Disk Access** in macOS **System Settings** → **Privacy & Security**. Reading List items are excluded. Safari stores no creation dates, so `{{date}}` uses the sync date. |
+| **Firefox** | Auto-detected `places.sqlite` or `bookmarkbackups/*.jsonlz4` | Reads live bookmarks from `places.sqlite` using the system `sqlite3` CLI tool on a temporary database snapshot. Alternatively, point to a `bookmarkbackups/*.jsonlz4` file or directory for native decompression without `sqlite3`. |
 
 ## Template placeholders
 
-`{{title}}` `{{url}}` `{{date}}` `{{folder_path}}` plus `{{folder}}` `{{domain}}` `{{browser}}` `{{synced}}`.
-Dates take a moment.js format: `{{date:YYYY-MM-DD HH:mm}}`. Add `|yaml` to quote a value safely in front matter:
-`title: {{title|yaml}}`.
+| Placeholder | Description |
+|---|---|
+| `{{title}}` | Bookmark title (falls back to host/path if title is empty). |
+| `{{url}}` | Full URL of the bookmark. |
+| `{{date}}` | Date the bookmark was added (supports moment.js format, e.g. `{{date:YYYY-MM-DD}}`). |
+| `{{synced}}` | Date the current sync occurred (e.g. `{{synced:YYYY-MM-DD HH:mm}}`). |
+| `{{folder_path}}` | Full browser folder path separated by `/` (e.g. `Bookmarks Bar/Dev/Obsidian`). |
+| `{{folder}}` | Immediate parent folder name (e.g. `Obsidian`). |
+| `{{domain}}` | Clean domain name without `www.` (e.g. `obsidian.md`). |
+| `{{browser}}` | Browser name (e.g. `Google Chrome`, `Safari`, `Firefox`). |
 
-## Sync behaviour
+### Filters
 
-* **Only sync new bookmarks** (default): a bookmark that already has a note is never touched.
-* **Apply templates to existing bookmarks**: existing notes are rewritten when the rendered result differs
-  (via `vault.process`, i.e. atomically). Manual edits to those notes are overwritten.
-* A bookmark is matched to its note by (1) the plugin's URL → path index in `data.json` (kept in sync when you
-  rename/move notes), then (2) an existing `<title>.md` that contains the URL. Same-title bookmarks with different
-  URLs get a short hash suffix. The same URL in several folders yields one note (first occurrence wins).
-* Deleting a note makes its bookmark "new" again, so the next sync recreates it.
+You can apply pipe filters to any placeholder:
+
+- `|yaml`: Safely quotes and escapes values for YAML frontmatter (e.g. `title: {{title|yaml}}`).
+- `|lower`: Converts value to lowercase.
+- `|upper`: Converts value to uppercase.
+
+## Sync behavior
+
+- **Only sync new bookmarks (default)**: Existing notes corresponding to a bookmark are never modified.
+- **Apply templates to existing bookmarks**: Existing bookmark notes will be updated if the rendered template output has changed.
+- **Renaming and moving notes**: The plugin tracks notes by their URL mapping in `data.json`. Renaming or moving notes inside Obsidian will preserve the association.
+- **Deleting notes**: If you delete a bookmark's note in Obsidian, it will be treated as new on the next sync and recreated.
+
+## Disclosures & privacy
+
+- **Desktop only**: This plugin requires Obsidian's desktop application (macOS, Windows, or Linux) because it uses local filesystem access to read browser databases.
+- **Filesystem access outside vault**: This plugin reads local browser bookmarks files stored on your computer (such as `Bookmarks.plist` for Safari, `Bookmarks` for Chrome, or `places.sqlite` for Firefox). These files are read strictly to import your bookmarks.
+- **100% offline & private**: No network requests are made. No analytics or telemetry are collected. All bookmark processing and note generation happens completely locally on your device.
+
+## License
+
+[MIT](LICENSE) © [Abdellah Chadidi](https://github.com/chadidi)

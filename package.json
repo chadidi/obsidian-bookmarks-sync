@@ -7,7 +7,12 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
   },
+  "author": "Abdellah Chadidi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chadidi/obsidian-browser-bookmarks.git"
+  },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "esbuild": "^0.21.5",
