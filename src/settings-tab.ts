@@ -75,7 +75,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
     pathSetting.descEl.addClass("bb-path-desc");
 
     new Setting(containerEl)
-      .setName("Root bookmark folder")
+      .setName("Browser bookmarks folder")
       .setDesc(
         createFragment((frag) => {
           frag.appendText("Sync only bookmarks inside a specific browser folder. Use ");
