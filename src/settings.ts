@@ -73,7 +73,8 @@ export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | n
     merged.templatePreset = raw.templatePreset;
   }
 
-  if (typeof merged.customTemplate !== "string" || !merged.customTemplate.trim()) {
+  const hasExplicitCustom = typeof raw?.customTemplate === "string" && Boolean(raw.customTemplate.trim());
+  if (!hasExplicitCustom) {
     merged.customTemplate =
       merged.templatePreset === "custom" && typeof raw?.template === "string" && raw.template.trim()
         ? raw.template
