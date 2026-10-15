@@ -24,3 +24,7 @@
 .bb-warning {
   color: var(--text-warning);
 }
+
+.bb-settings-nav-icon {
+  margin-right: 6px;
+}

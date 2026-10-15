@@ -50,8 +50,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     // setIcon() appends to the element, so we create a dedicated span, prepend it, then set the icon.
     const navEl = (settingTab as unknown as { navEl?: HTMLElement }).navEl;
     if (navEl) {
-      const iconEl = navEl.createSpan();
-      iconEl.style.marginRight = "6px";
+      const iconEl = navEl.createSpan({ cls: "bb-settings-nav-icon" });
       navEl.prepend(iconEl);
       setIcon(iconEl, "bookmarks-sync");
     }
