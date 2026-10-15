@@ -1,8 +1,8 @@
-# Browser Bookmarks Sync for Obsidian
+# Bookmarks Sync for Obsidian
 
 Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into your Obsidian vault, using your own customizable template.
 
-![Browser Bookmarks Sync Settings](./images/screenshot.png)
+![Bookmarks Sync Settings](./images/screenshot.png)
 
 ## Features
 
@@ -24,34 +24,34 @@ You can easily install and test beta releases of this plugin using [Obsidian42 -
 1. Install and enable the **BRAT** plugin from Obsidian's Community Plugins.
 2. Open Obsidian **Settings** → **BRAT**.
 3. Under **Beta Plugin List**, click **Add Beta plugin**.
-4. Enter the GitHub repository: `chadidi/obsidian-browser-bookmarks` (or `https://github.com/chadidi/obsidian-browser-bookmarks`).
+4. Enter the GitHub repository: `chadidi/obsidian-bookmarks-sync` (or `https://github.com/chadidi/obsidian-bookmarks-sync`).
 5. Click **Add Plugin**. BRAT will download the latest release assets (`manifest.json`, `main.js`, and `styles.css`).
-6. Go to **Settings** → **Community plugins** and enable **Browser Bookmarks Sync**.
+6. Go to **Settings** → **Community plugins** and enable **Bookmarks Sync**.
 
 ### Manual installation
 
-1. Download the latest release (`main.js`, `manifest.json`, `styles.css`) from the [Releases](https://github.com/chadidi/obsidian-browser-bookmarks/releases) page.
-2. Create a folder named `browser-bookmarks-sync` in your vault's plugin directory: `<vault>/.obsidian/plugins/browser-bookmarks-sync/`.
+1. Download the latest release (`main.js`, `manifest.json`, `styles.css`) from the [Releases](https://github.com/chadidi/obsidian-bookmarks-sync/releases) page.
+2. Create a folder named `bookmarks-sync` in your vault's plugin directory: `<vault>/.obsidian/plugins/bookmarks-sync/`.
 3. Copy `main.js`, `manifest.json`, and `styles.css` into that folder.
 4. Reload Obsidian and enable the plugin under **Settings** → **Community plugins**.
 
 ### Build from source
 
 ```bash
-git clone https://github.com/chadidi/obsidian-browser-bookmarks.git
-cd obsidian-browser-bookmarks
+git clone https://github.com/chadidi/obsidian-bookmarks-sync.git
+cd obsidian-bookmarks-sync
 npm install
 npm run build
 ```
 
-Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugins/browser-bookmarks-sync/`.
+Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugins/bookmarks-sync/`.
 
 ## First run
 
-1. Go to **Settings** → **Browser Bookmarks Sync**.
+1. Go to **Settings** → **Bookmarks Sync**.
 2. Select your browser under **Source**. The plugin will automatically detect your browser's default bookmarks file path on macOS, Windows, or Linux.
 3. Choose your target vault folder and template.
-4. Click **Sync bookmarks** (or click the bookmark ribbon icon, or run the command `Sync browser bookmarks now`).
+4. Click **Sync bookmarks** (or click the bookmark ribbon icon, or run the command `Sync bookmarks now`).
 5. Automatic syncs (on startup or periodic) are kept disabled until one manual sync has completed successfully to prevent accidental imports.
 
 ## Supported browsers

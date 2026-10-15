@@ -10,7 +10,7 @@ import type { BookmarkSettings, PluginData, SyncHost, SyncResult, SyncTrigger } 
 const formatWithMoment = (date: Date, format: string): string =>
   (moment as unknown as (d: Date) => { format(f: string): string })(date).format(format);
 
-export default class BrowserBookmarksPlugin extends Plugin implements SyncHost {
+export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
   settings!: BookmarkSettings;
   index: Record<string, string> = {};
   readonly log = new Logger(() => this.settings?.debug ?? false);
@@ -26,10 +26,10 @@ export default class BrowserBookmarksPlugin extends Plugin implements SyncHost {
     this.engine = new SyncEngine(this.app, this, formatWithMoment);
 
     // Manual sync: ribbon button + command palette.
-    this.addRibbonIcon("bookmark", "Sync browser bookmarks now", () => void this.syncNow("manual"));
+    this.addRibbonIcon("bookmark", "Sync bookmarks now", () => void this.syncNow("manual"));
     this.addCommand({
       id: "sync-now",
-      name: "Sync browser bookmarks now",
+      name: "Sync bookmarks now",
       callback: () => void this.syncNow("manual"),
     });
 
@@ -87,7 +87,7 @@ export default class BrowserBookmarksPlugin extends Plugin implements SyncHost {
       return;
     }
 
-    const progress = manual ? new Notice("Syncing browser bookmarks…", 0) : null;
+    const progress = manual ? new Notice("Syncing bookmarks…", 0) : null;
     try {
       const result = await this.engine.run(trigger);
       if (!result) {

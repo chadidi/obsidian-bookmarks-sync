@@ -1,4 +1,4 @@
-const PREFIX = "[Browser Bookmarks Sync]";
+const PREFIX = "[Bookmarks Sync]";
 
 export class Logger {
   constructor(private readonly isDebug: () => boolean) {}

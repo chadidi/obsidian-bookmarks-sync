@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { App, type DropdownComponent, PluginSettingTab, Setting, type TextAreaComponent, debounce } from "obsidian";
-import type BrowserBookmarksPlugin from "./main";
+import type BookmarksSyncPlugin from "./main";
 import { defaultBrowserPath, resolveSourcePath } from "./paths";
 import { FULL_TEMPLATE, SIMPLE_TEMPLATE } from "./settings";
 import { findUnknownPlaceholders } from "./template";
@@ -17,7 +17,7 @@ const PATH_HELP: Record<BrowserType, string> = {
 };
 
 export class BookmarkSettingTab extends PluginSettingTab {
-  constructor(app: App, private readonly plugin: BrowserBookmarksPlugin) {
+  constructor(app: App, private readonly plugin: BookmarksSyncPlugin) {
     super(app, plugin);
   }
 

@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-browser-bookmarks-sync",
+	"name": "obsidian-bookmarks-sync",
 	"version": "1.0.0",
 	"description": "Import Safari, Chrome or Firefox bookmarks into Obsidian as individual Markdown notes.",
 	"main": "main.js",
@@ -15,7 +15,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/chadidi/obsidian-browser-bookmarks.git"
+		"url": "https://github.com/chadidi/obsidian-bookmarks-sync.git"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.4",

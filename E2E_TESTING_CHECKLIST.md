@@ -1,6 +1,6 @@
-# Browser Bookmarks Sync - End-to-End (E2E) Test Checklist
+# Bookmarks Sync - End-to-End (E2E) Test Checklist
 
-This document provides a comprehensive end-to-end testing checklist for the **Obsidian Browser Bookmarks Sync** plugin across all supported browsers (**Google Chrome**, **Apple Safari**, and **Mozilla Firefox**).
+This document provides a comprehensive end-to-end testing checklist for the **Obsidian Bookmarks Sync** plugin across all supported browsers (**Google Chrome**, **Apple Safari**, and **Mozilla Firefox**).
 
 ---
 
@@ -12,12 +12,12 @@ Before beginning E2E testing:
   ```bash
   npm run build
   ```
-  Ensure `main.js`, `manifest.json`, and `styles.css` are in `<Your Vault>/.obsidian/plugins/obsidian-browser-bookmarks/`.
+  Ensure `main.js`, `manifest.json`, and `styles.css` are in `<Your Vault>/.obsidian/plugins/obsidian-bookmarks-sync/`.
 - [ ] **Open Developer Tools in Obsidian:**
   - Press `Cmd + Option + I` (macOS) or `Ctrl + Shift + I` (Windows/Linux) to monitor console logs.
-  - Filter console output by `[Browser Bookmarks Sync]`.
+  - Filter console output by `[Bookmarks Sync]`.
 - [ ] **Enable Debug Logging in Settings:**
-  - Go to **Settings → Community plugins → Browser Bookmarks Sync**.
+  - Go to **Settings → Community plugins → Bookmarks Sync**.
   - Toggle on **Debug logging** to inspect detailed parsing and sync statistics.
 - [ ] **Prepare Test Bookmarks in Each Browser:**
   - Ensure you have a mix of:
@@ -39,15 +39,15 @@ Before beginning E2E testing:
     - **Windows:** `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Bookmarks`
     - **Linux:** `~/.config/google-chrome/Default/Bookmarks`
 - [ ] **Default Profile Import:**
-  - Run command **Browser Bookmarks: Sync now**.
-  - Check console log: `[Browser Bookmarks Sync] Chrome: parsed N bookmarks`.
+  - Run command **Bookmarks Sync: Sync bookmarks now**.
+  - Check console log: `[Bookmarks Sync] Chrome: parsed N bookmarks`.
   - Notice message displays: `Sync finished: N created, 0 updated, ...`.
 
 ### 2. Custom Profile Path (Optional)
 - [ ] **Secondary Profile:**
   - Create or locate another Chrome profile (e.g., `Profile 1`).
   - Enter custom path: `~/Library/Application Support/Google/Chrome/Profile 1/Bookmarks` (or Windows/Linux equivalent).
-  - Run **Browser Bookmarks: Sync now** and verify bookmarks from Profile 1 are imported.
+  - Run **Bookmarks Sync: Sync bookmarks now** and verify bookmarks from Profile 1 are imported.
 
 ### 3. Folder & URL Validation
 - [ ] **Roots Imported:**
@@ -77,8 +77,8 @@ Safari stores bookmarks in `~/Library/Safari/Bookmarks.plist`, which macOS prote
   - Enable **Obsidian** (add it with `+` if not in the list).
   - Restart Obsidian.
 - [ ] **Successful Sync with FDA:**
-  - Run **Browser Bookmarks: Sync now**.
-  - Check console log: `[Browser Bookmarks Sync] Safari: parsed N bookmarks`.
+  - Run **Bookmarks Sync: Sync bookmarks now**.
+  - Check console log: `[Bookmarks Sync] Safari: parsed N bookmarks`.
 
 ### 2. Folder Mapping & Reading List
 - [ ] **Favorites Mapping:**
