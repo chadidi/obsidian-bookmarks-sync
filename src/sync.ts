@@ -184,10 +184,7 @@ export class SyncEngine {
       index[key] = target.path;
       owner.set(target.path, key);
 
-      if (!settings.applyToExisting) {
-        result.skipped++;
-        return;
-      }
+      // 1-way sync: always overwrite with the latest template render.
       const content = this.render(entry, template, syncedAt);
       let changed = false;
       // vault.process is an atomic read-modify-write, so we never clobber a concurrent edit.

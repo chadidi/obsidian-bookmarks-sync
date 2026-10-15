@@ -35,7 +35,7 @@ export interface SyncResult {
   created: number;
   updated: number;
   unchanged: number;
-  /** Existing notes left untouched because "apply to existing" is off. */
+  /** Reserved for future use (always 0 since sync always overwrites existing notes). */
   skipped: number;
   /** Same URL seen more than once in the browser (first occurrence wins). */
   duplicates: number;
@@ -65,8 +65,7 @@ export interface BookmarkSettings {
   /** 0 disables periodic sync. */
   intervalMinutes: number;
   syncOnStartup: boolean;
-  /** true = overwrite existing notes with the latest template; false = only create new notes. */
-  applyToExisting: boolean;
+
   /** moment.js format used by {{date}} and {{synced}} when no explicit format is given. */
   dateFormat: string;
   templatePreset: TemplatePreset;

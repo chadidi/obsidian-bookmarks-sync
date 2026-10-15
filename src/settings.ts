@@ -36,7 +36,6 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   folderStructure: "folders",
   intervalMinutes: 0,
   syncOnStartup: true,
-  applyToExisting: false,
   dateFormat: "YYYY-MM-DD",
   templatePreset: "simple",
   customTemplate: FULL_TEMPLATE,

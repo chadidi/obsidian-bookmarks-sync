@@ -74,37 +74,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
       );
     pathSetting.descEl.addClass("bb-path-desc");
 
-    if (browser === "firefox") {
-      new Setting(containerEl)
-        .setName("sqlite3 executable")
-        .setDesc("Only used when the path above points to places.sqlite. Leave as 'sqlite3' if it is on your PATH.")
-        .addText((text) =>
-          text
-            .setPlaceholder("sqlite3")
-            .setValue(settings.sqlite3Path)
-            .onChange((value) => {
-              settings.sqlite3Path = value.trim() || "sqlite3";
-              save();
-            }),
-        );
-    }
-
-    /* ---------------- Output ---------------- */
-    new Setting(containerEl).setName("Output").setHeading();
-
-    new Setting(containerEl)
-      .setName("Target folder")
-      .setDesc("Vault folder for the bookmark notes. It is created if it does not exist.")
-      .addText((text) =>
-        text
-          .setPlaceholder("Bookmarks")
-          .setValue(settings.targetFolder)
-          .onChange((value) => {
-            settings.targetFolder = value.trim();
-            save();
-          }),
-      );
-
     new Setting(containerEl)
       .setName("Root bookmark folder")
       .setDesc(
@@ -137,6 +106,37 @@ export class BookmarkSettingTab extends PluginSettingTab {
           }),
       );
 
+    if (browser === "firefox") {
+      new Setting(containerEl)
+        .setName("sqlite3 executable")
+        .setDesc("Only used when the path above points to places.sqlite. Leave as 'sqlite3' if it is on your PATH.")
+        .addText((text) =>
+          text
+            .setPlaceholder("sqlite3")
+            .setValue(settings.sqlite3Path)
+            .onChange((value) => {
+              settings.sqlite3Path = value.trim() || "sqlite3";
+              save();
+            }),
+        );
+    }
+
+    /* ---------------- Output ---------------- */
+    new Setting(containerEl).setName("Output").setHeading();
+
+    new Setting(containerEl)
+      .setName("Target folder")
+      .setDesc("Vault folder for the bookmark notes. It is created if it does not exist.")
+      .addText((text) =>
+        text
+          .setPlaceholder("Bookmarks")
+          .setValue(settings.targetFolder)
+          .onChange((value) => {
+            settings.targetFolder = value.trim();
+            save();
+          }),
+      );
+
     new Setting(containerEl)
       .setName("Folder structure")
       .setDesc(
@@ -153,22 +153,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           }),
       );
-
-    const modeSetting = new Setting(containerEl).setName("Apply templates to existing bookmarks");
-    const describeMode = (apply: boolean) =>
-      modeSetting.setDesc(
-        apply
-          ? "On: notes that already exist are overwritten with the latest template on every sync. Manual edits to those notes are lost."
-          : "Off: only sync new bookmarks. Notes that already exist (found by their recorded link or by containing the URL) are never touched.",
-      );
-    describeMode(settings.applyToExisting);
-    modeSetting.addToggle((toggle) =>
-      toggle.setValue(settings.applyToExisting).onChange(async (value) => {
-        settings.applyToExisting = value;
-        describeMode(value);
-        await this.plugin.saveSettings();
-      }),
-    );
 
     /* ---------------- Automation ---------------- */
     new Setting(containerEl).setName("Automation").setHeading();
