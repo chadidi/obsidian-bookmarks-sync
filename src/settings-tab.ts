@@ -17,6 +17,8 @@ const PATH_HELP: Record<BrowserType, string> = {
 };
 
 export class BookmarkSettingTab extends PluginSettingTab {
+  icon = "bookmark";
+
   constructor(app: App, private readonly plugin: BookmarksSyncPlugin) {
     super(app, plugin);
   }

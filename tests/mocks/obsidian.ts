@@ -45,10 +45,13 @@ export class Plugin {
 }
 
 export class PluginSettingTab {
+  icon = "";
   constructor(public app: any, public plugin: any) {}
   display(): void {}
   hide(): void {}
 }
+
+export function setIcon(_parent: any, _icon: string): void {}
 
 export class Setting {
   constructor(public containerEl: any) {}

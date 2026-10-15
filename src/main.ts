@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFolder, debounce, moment } from "obsidian";
+import { Notice, Plugin, TFolder, addIcon, debounce, moment, setIcon } from "obsidian";
 import { errorMessage } from "./errors";
 import { Logger } from "./logger";
 import { normalizeSettings } from "./settings";
@@ -25,15 +25,36 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
 
     this.engine = new SyncEngine(this.app, this, formatWithMoment);
 
+    // Register the exact current Lucide bookmark SVG so it looks identical to lucide.dev/icons/bookmark.
+    // Obsidian bundles an older Lucide version; addIcon() lets us ship the up-to-date path.
+    // The path is authored for a 24×24 canvas; scale(4.167) maps it to Obsidian's required 100×100 viewBox.
+    addIcon(
+      "bookmarks-sync",
+      `<g transform="scale(4.167)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>
+      </g>`,
+    );
+
     // Manual sync: ribbon button + command palette.
-    this.addRibbonIcon("bookmark", "Sync bookmarks now", () => void this.syncNow("manual"));
+    this.addRibbonIcon("bookmarks-sync", "Sync bookmarks now", () => void this.syncNow("manual"));
     this.addCommand({
       id: "sync-now",
       name: "Sync bookmarks now",
+      icon: "bookmarks-sync",
       callback: () => void this.syncNow("manual"),
     });
 
-    this.addSettingTab(new BookmarkSettingTab(this.app, this));
+    const settingTab = new BookmarkSettingTab(this.app, this);
+    this.addSettingTab(settingTab);
+    // Prepend the icon so it appears on the left, matching all other settings sidebar items.
+    // setIcon() appends to the element, so we create a dedicated span, prepend it, then set the icon.
+    const navEl = (settingTab as unknown as { navEl?: HTMLElement }).navEl;
+    if (navEl) {
+      const iconEl = navEl.createSpan();
+      iconEl.style.marginRight = "6px";
+      navEl.prepend(iconEl);
+      setIcon(iconEl, "bookmarks-sync");
+    }
 
     // Keep the bookmark -> note index valid when the user renames or moves notes.
     this.registerEvent(
