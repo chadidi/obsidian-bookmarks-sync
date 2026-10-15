@@ -36,7 +36,6 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   folderStructure: "folders",
   intervalMinutes: 0,
   syncOnStartup: true,
-  dateFormat: "YYYY-MM-DD",
   templatePreset: "simple",
   customTemplate: FULL_TEMPLATE,
   template: SIMPLE_TEMPLATE,
@@ -88,7 +87,6 @@ export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | n
     merged.template = merged.customTemplate;
   }
 
-  if (!merged.dateFormat) merged.dateFormat = DEFAULT_SETTINGS.dateFormat;
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
   if (typeof merged.rootFolder !== "string") merged.rootFolder = "";
   const FOLDER_STRUCTURES: FolderStructure[] = ["folders", "flat"];

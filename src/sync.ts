@@ -5,7 +5,7 @@ import { DEFAULT_TEMPLATE } from "./settings";
 import { readBookmarks } from "./sources";
 import { findUnknownPlaceholders, renderTemplate, type DateFormatter } from "./template";
 import type { BookmarkEntry, SyncHost, SyncResult, SyncTrigger } from "./types";
-import { hasOwn, joinVaultPath, sanitizeFileName, sanitizeFolderName, shortHash, yieldToUi } from "./utils";
+import { hasOwn, joinVaultPath, sanitizeFileName, sanitizeFolderName, shortHash, yieldToUi, getObsidianDateFormat } from "./utils";
 
 /** Hand control back to the UI thread every N bookmarks so a large import never freezes Obsidian. */
 const YIELD_EVERY = 25;
@@ -171,7 +171,7 @@ export class SyncEngine {
     owner: Map<string, string>,
     result: SyncResult,
   ): Promise<void> {
-    const { settings, index } = this.host;
+    const { index } = this.host;
     const vault = this.app.vault;
 
     // Compute the destination folder for this entry.
@@ -225,7 +225,7 @@ export class SyncEngine {
   }
 
   private render(entry: BookmarkEntry, template: string, syncedAt: Date): string {
-    const { settings } = this.host;
+    const dateFormat = getObsidianDateFormat(this.app);
     return withTrailingNewline(
       renderTemplate(
         template,
@@ -238,7 +238,7 @@ export class SyncEngine {
           browser: entry.browser,
         },
         this.formatDate,
-        settings.dateFormat,
+        dateFormat,
       ),
     );
   }

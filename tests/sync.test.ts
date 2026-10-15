@@ -143,10 +143,9 @@ test("SyncEngine respects folderStructure: 'flat'", async () => {
   assert.ok(vault.files.has("Bookmarks/GitHub.md"));
 });
 
-test("SyncEngine handles applyToExisting setting", async () => {
+test("SyncEngine overwrites existing bookmarks on subsequent sync (1-way sync)", async () => {
   const { host, vault } = createSyncHost({
     targetFolder: "Bookmarks",
-    applyToExisting: false,
   });
 
   const engine = new SyncEngine(
@@ -168,15 +167,18 @@ test("SyncEngine handles applyToExisting setting", async () => {
   const res1 = await (engine as any).apply([entry]);
   assert.equal(res1.created, 1);
 
-  // Second sync with applyToExisting: false -> skipped
-  const res2 = await (engine as any).apply([entry]);
-  assert.equal(res2.skipped, 1);
-  assert.equal(res2.created, 0);
+  // Modify file directly in vault to simulate divergence
+  vault.files.set("Bookmarks/Vite.md", "custom content");
 
-  // Enable applyToExisting: true
-  host.settings.applyToExisting = true;
+  // Second sync: always overwrites existing notes with latest template (1-way sync)
+  const res2 = await (engine as any).apply([entry]);
+  assert.equal(res2.updated, 1);
+  assert.equal(res2.created, 0);
+  assert.notEqual(vault.files.get("Bookmarks/Vite.md"), "custom content");
+
+  // Third sync with same content: unchanged
   const res3 = await (engine as any).apply([entry]);
-  assert.equal(res3.unchanged, 1); // Content didn't change
+  assert.equal(res3.unchanged, 1);
 });
 
 test("SyncEngine handleRename updates index for files and folders", () => {

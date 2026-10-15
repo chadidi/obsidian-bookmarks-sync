@@ -67,7 +67,7 @@ export interface BookmarkSettings {
   syncOnStartup: boolean;
 
   /** moment.js format used by {{date}} and {{synced}} when no explicit format is given. */
-  dateFormat: string;
+  dateFormat?: string;
   templatePreset: TemplatePreset;
   customTemplate: string;
   template: string;

@@ -293,21 +293,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
     });
     refreshWarning();
 
-    new Setting(containerEl)
-      .setName("Default date format")
-      .setDesc(
-        "moment.js format used by {{date}} and {{synced}} when they have no explicit format. {{date}} is the day the bookmark was added in the browser (the sync date if the browser doesn't record it, as in Safari).",
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder("YYYY-MM-DD")
-          .setValue(settings.dateFormat)
-          .onChange((value) => {
-            settings.dateFormat = value.trim() || "YYYY-MM-DD";
-            save();
-          }),
-      );
-
     /* ---------------- Diagnostics ---------------- */
     new Setting(containerEl).setName("Diagnostics").setHeading();
 

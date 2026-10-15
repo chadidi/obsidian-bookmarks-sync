@@ -81,3 +81,24 @@ export function joinVaultPath(folder: string, fileName: string): string {
 export function hasOwn(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
+
+/**
+ * Returns the user's preferred date format by reading Obsidian's Daily Notes
+ * core plugin setting. Falls back to "YYYY-MM-DD" if the plugin is disabled
+ * or its format is empty.
+ *
+ * Uses the internal plugin API (undocumented but stable in practice).
+ */
+export function getObsidianDateFormat(app: unknown): string {
+  try {
+    const plugins = (app as { internalPlugins?: { getPluginById?: (id: string) => { enabled?: boolean; instance?: { options?: { format?: string } } } | null } }).internalPlugins;
+    const plugin = plugins?.getPluginById?.("daily-notes");
+    if (plugin?.enabled) {
+      const format = plugin.instance?.options?.format;
+      if (format && format.trim()) return format.trim();
+    }
+  } catch {
+    // Silently fall through to the default.
+  }
+  return "YYYY-MM-DD";
+}
