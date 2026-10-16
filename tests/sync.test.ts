@@ -136,7 +136,7 @@ function createSyncHost(settings: Partial<BookmarkSettings> = {}) {
     settings: mergedSettings,
     index,
     log: silentLogger,
-    requestIndexSave: () => {},
+    requestIndexSave: () => { },
   };
 
   return { host, vault, app };
@@ -417,5 +417,88 @@ test("SyncEngine handles collision when moving note into folder where name is ta
   const files = Array.from(vault.files.keys());
   assert.ok(files.some((f) => f === "Bookmarks/Tool.md"));
   assert.ok(files.some((f) => f.startsWith("Bookmarks/Tool (") && f.endsWith(").md")));
+});
+
+test("SyncEngine deletes notes for bookmarks removed from the browser", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "folders",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  const kept: BookmarkEntry = {
+    sourceId: "1",
+    title: "Keep",
+    url: "https://keep.example.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Work"],
+    browser: "chrome",
+  };
+  const gone: BookmarkEntry = {
+    sourceId: "2",
+    title: "Gone",
+    url: "https://gone.example.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Work"],
+    browser: "chrome",
+  };
+
+  const res1 = await (engine as any).apply([kept, gone]);
+  assert.equal(res1.created, 2);
+  assert.ok(vault.files.has("Bookmarks/Work/Gone.md"));
+
+  // Browser no longer returns `gone`.
+  const res2 = await (engine as any).apply([kept]);
+  assert.equal(res2.removed, 1);
+  assert.equal(host.index["https://gone.example.com"], undefined);
+  assert.ok(!vault.files.has("Bookmarks/Work/Gone.md"));
+  assert.ok(vault.files.has("Bookmarks/Work/Keep.md"));
+});
+
+test("SyncEngine keeps notes for bookmarks filtered out by rootFolder", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "flat",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  const inScope: BookmarkEntry = {
+    sourceId: "1",
+    title: "InScope",
+    url: "https://in.example.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Work"],
+    browser: "chrome",
+  };
+  const outOfScope: BookmarkEntry = {
+    sourceId: "2",
+    title: "OutOfScope",
+    url: "https://out.example.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Personal"],
+    browser: "chrome",
+  };
+
+  // Initial sync with no root filter imports both.
+  await (engine as any).apply([inScope, outOfScope]);
+  assert.ok(vault.files.has("Bookmarks/OutOfScope.md"));
+
+  // A root folder now filters out `outOfScope`, but it still exists in the browser
+  // (present in the unfiltered entries), so its note must survive.
+  host.settings.rootFolder = "Work";
+  const res = await (engine as any).apply([inScope], [inScope, outOfScope]);
+  assert.equal(res.removed, 0);
+  assert.equal(host.index["https://out.example.com"], "Bookmarks/OutOfScope.md");
+  assert.ok(vault.files.has("Bookmarks/OutOfScope.md"));
 });
 

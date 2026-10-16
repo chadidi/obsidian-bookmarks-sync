@@ -1,18 +1,18 @@
-import type { Logger } from "./logger";
+import type { Logger } from './logger';
 
-export type BrowserType = "chrome" | "firefox" | "safari";
+export type BrowserType = 'chrome' | 'firefox' | 'safari';
 
 /**
  * How bookmark notes are laid out in the vault:
  * - "folders": mirror the browser's folder hierarchy as real vault subfolders (default)
  * - "flat": every note lands directly in targetFolder, no subfolders created
  */
-export type FolderStructure = "folders" | "flat";
+export type FolderStructure = 'folders' | 'flat';
 
 export const BROWSER_LABELS: Record<BrowserType, string> = {
-  chrome: "Google Chrome",
-  firefox: "Mozilla Firefox",
-  safari: "Safari",
+  chrome: 'Google Chrome',
+  firefox: 'Mozilla Firefox',
+  safari: 'Safari',
 };
 
 /** A bookmark normalised across all browsers. */
@@ -28,13 +28,15 @@ export interface BookmarkEntry {
   browser: BrowserType;
 }
 
-export type SyncTrigger = "manual" | "periodic" | "startup";
+export type SyncTrigger = 'manual' | 'periodic' | 'startup';
 
 export interface SyncResult {
   total: number;
   created: number;
   updated: number;
   moved: number;
+  /** Notes deleted because their bookmark no longer exists in the browser. */
+  removed: number;
   unchanged: number;
   /** Reserved for future use (always 0 since sync always overwrites existing notes). */
   skipped: number;
@@ -44,7 +46,7 @@ export interface SyncResult {
   durationMs: number;
 }
 
-export type TemplatePreset = "simple" | "full" | "custom";
+export type TemplatePreset = 'simple' | 'full' | 'custom';
 
 export interface BookmarkSettings {
   browser: BrowserType;

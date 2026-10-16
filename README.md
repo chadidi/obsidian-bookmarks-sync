@@ -89,6 +89,7 @@ You can apply pipe filters to any placeholder:
 - **Apply templates to existing bookmarks**: Existing bookmark notes will be updated if the rendered template output has changed.
 - **Renaming and moving notes**: The plugin tracks notes by their URL mapping in `data.json`. Renaming or moving notes inside Obsidian will preserve the association.
 - **Deleting notes**: If you delete a bookmark's note in Obsidian, it will be treated as new on the next sync and recreated.
+- **Removing deleted bookmarks**: If you delete a bookmark in your browser, its note is permanently deleted from the vault on the next sync. Only notes the plugin created (tracked in `data.json`) are removed; notes for bookmarks that still exist in the browser but fall outside the configured **Browser bookmarks folder** are left untouched.
 
 ## Disclosures & privacy
 

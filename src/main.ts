@@ -137,6 +137,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     const parts = [`${r.created} created`];
     if (r.updated) parts.push(`${r.updated} updated`);
     if (r.moved) parts.push(`${r.moved} moved`);
+    if (r.removed) parts.push(`${r.removed} removed`);
     if (r.skipped) parts.push(`${r.skipped} existing skipped`);
     if (r.unchanged) parts.push(`${r.unchanged} unchanged`);
     if (r.duplicates) parts.push(`${r.duplicates} duplicate URLs ignored`);
