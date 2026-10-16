@@ -16,9 +16,13 @@ import { SafariPickerModal } from './ui/safari-picker-modal';
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
-    'The Chrome/Chromium "Bookmarks" JSON file. When you are signed in, Chrome may keep your bookmarks ' +
-    'in "AccountBookmarks" instead; the plugin detects both. For other profiles or Chromium browsers ' +
-    '(Edge, Brave...) enter their Bookmarks file here.',
+    'The Google Chrome "Bookmarks" JSON file. When you are signed in, Chrome may keep your bookmarks ' +
+    'in "AccountBookmarks" instead; the plugin detects both. For a different profile, enter its ' +
+    'Bookmarks file here.',
+  chromium:
+    'The "Bookmarks" JSON file of Chromium or another Chromium-based browser (Brave, Edge...). When ' +
+    'you are signed in, it may keep your bookmarks in "AccountBookmarks" instead; the plugin detects ' +
+    'both. For a different profile, enter its Bookmarks file here.',
   firefox:
     'Either places.sqlite (live data; needs the sqlite3 command-line tool) or a bookmarkbackups *.jsonlz4 file / folder ' +
     "(no extra software, but only as fresh as Firefox's last daily backup).",
@@ -31,6 +35,7 @@ const PATH_HELP: Record<BrowserType, string> = {
 const ACCESS_HINT: Record<BrowserType, string> = {
   chrome:
     'Open Google Chrome and sign in so it saves your bookmarks to disk, then reopen this tab.',
+  chromium: 'Open Chromium and sign in so it saves your bookmarks to disk, then reopen this tab.',
   firefox:
     'Open Mozilla Firefox at least once (or let it create a daily bookmark backup), then reopen this tab.',
   safari:
@@ -66,6 +71,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
         dd
           .addOptions({
             chrome: BROWSER_LABELS.chrome,
+            chromium: `${BROWSER_LABELS.chromium} (Brave, Edge...)`,
             firefox: BROWSER_LABELS.firefox,
             safari: `${BROWSER_LABELS.safari} (macOS)`,
           })

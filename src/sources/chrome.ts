@@ -1,6 +1,6 @@
 import type { Logger } from '../logger';
 import { BookmarkSourceError } from '../errors';
-import type { BookmarkEntry } from '../types';
+import { BROWSER_LABELS, type BookmarkEntry, type BrowserType } from '../types';
 import { isImportableUrl, readFileOrThrow } from './common';
 
 interface ChromeNode {
@@ -29,7 +29,12 @@ function webkitToDate(value: string | undefined): Date | null {
   return ms > 0 ? new Date(ms) : null;
 }
 
-function walk(nodes: ChromeNode[], trail: string[], out: BookmarkEntry[]): void {
+function walk(
+  nodes: ChromeNode[],
+  trail: string[],
+  out: BookmarkEntry[],
+  browser: BrowserType,
+): void {
   for (const node of nodes) {
     if (node.type === 'url') {
       if (!isImportableUrl(node.url)) continue;
@@ -39,16 +44,20 @@ function walk(nodes: ChromeNode[], trail: string[], out: BookmarkEntry[]): void 
         url: node.url.trim(),
         dateAdded: webkitToDate(node.date_added),
         folderPath: trail,
-        browser: 'chrome',
+        browser,
       });
     } else if (Array.isArray(node.children)) {
       const name = (node.name ?? '').trim();
-      walk(node.children, name ? [...trail, name] : trail, out);
+      walk(node.children, name ? [...trail, name] : trail, out, browser);
     }
   }
 }
 
-export async function readChromeBookmarks(filePath: string, log: Logger): Promise<BookmarkEntry[]> {
+export async function readChromeBookmarks(
+  filePath: string,
+  log: Logger,
+  browser: BrowserType = 'chrome',
+): Promise<BookmarkEntry[]> {
   const buffer = await readFileOrThrow(filePath);
 
   let doc: { roots?: Record<string, unknown> };
@@ -72,8 +81,8 @@ export async function readChromeBookmarks(filePath: string, log: Logger): Promis
   for (const [key, value] of Object.entries(doc.roots)) {
     if (typeof value !== 'object' || value === null) continue; // e.g. sync_transaction_version
     const root = value as ChromeNode;
-    walk(root.children ?? [], [ROOT_LABELS[key] ?? root.name ?? key], out);
+    walk(root.children ?? [], [ROOT_LABELS[key] ?? root.name ?? key], out, browser);
   }
-  log.debug(`Chrome: parsed ${out.length} bookmarks`);
+  log.debug(`${BROWSER_LABELS[browser]}: parsed ${out.length} bookmarks`);
   return out;
 }

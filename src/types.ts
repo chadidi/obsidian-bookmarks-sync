@@ -1,6 +1,6 @@
 import type { Logger } from './logger';
 
-export type BrowserType = 'chrome' | 'firefox' | 'safari';
+export type BrowserType = 'chrome' | 'chromium' | 'firefox' | 'safari';
 
 /**
  * How bookmark notes are laid out in the vault:
@@ -11,6 +11,7 @@ export type FolderStructure = 'folders' | 'flat';
 
 export const BROWSER_LABELS: Record<BrowserType, string> = {
   chrome: 'Google Chrome',
+  chromium: 'Chromium',
   firefox: 'Mozilla Firefox',
   safari: 'Safari',
 };

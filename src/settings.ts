@@ -29,7 +29,7 @@ export const DEFAULT_TEMPLATE = SIMPLE_TEMPLATE;
 
 export const DEFAULT_SETTINGS: BookmarkSettings = {
   browser: 'chrome',
-  paths: { chrome: '', firefox: '', safari: '' },
+  paths: { chrome: '', chromium: '', firefox: '', safari: '' },
   sqlite3Path: 'sqlite3',
   targetFolder: 'Bookmarks',
   allowVaultRootTarget: false,
@@ -53,7 +53,7 @@ export function isVaultRootTarget(targetFolder: string): boolean {
   return trimmed === '' || trimmed === '/';
 }
 
-const BROWSERS: BrowserType[] = ['chrome', 'firefox', 'safari'];
+const BROWSERS: BrowserType[] = ['chrome', 'chromium', 'firefox', 'safari'];
 
 /** Merges stored data over the defaults and repairs any invalid values. */
 export function normalizeSettings(

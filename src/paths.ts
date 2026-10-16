@@ -68,21 +68,21 @@ export function detectFirefoxPlacesPath(): string | null {
   return found[0]?.file ?? null;
 }
 
-/** The Chrome user data directory for the current platform. */
-function chromeUserDataDir(): string {
+/** The user data directory of a Chromium-based browser (Chrome or Chromium) for the current platform. */
+function chromiumUserDataDir(kind: 'chrome' | 'chromium'): string {
   const home = os.homedir();
+  const local = process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local');
   switch (process.platform) {
     case 'darwin':
-      return path.join(home, 'Library', 'Application Support', 'Google', 'Chrome');
+      return kind === 'chrome'
+        ? path.join(home, 'Library', 'Application Support', 'Google', 'Chrome')
+        : path.join(home, 'Library', 'Application Support', 'Chromium');
     case 'win32':
-      return path.join(
-        process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local'),
-        'Google',
-        'Chrome',
-        'User Data',
-      );
+      return kind === 'chrome'
+        ? path.join(local, 'Google', 'Chrome', 'User Data')
+        : path.join(local, 'Chromium', 'User Data');
     default:
-      return path.join(home, '.config', 'google-chrome');
+      return path.join(home, '.config', kind === 'chrome' ? 'google-chrome' : 'chromium');
   }
 }
 
@@ -104,7 +104,9 @@ export function defaultBrowserPath(browser: BrowserType): string {
   const home = os.homedir();
   switch (browser) {
     case 'chrome':
-      return chromeBookmarkFile(path.join(chromeUserDataDir(), 'Default'));
+      return chromeBookmarkFile(path.join(chromiumUserDataDir('chrome'), 'Default'));
+    case 'chromium':
+      return chromeBookmarkFile(path.join(chromiumUserDataDir('chromium'), 'Default'));
     case 'safari':
       return process.platform === 'darwin'
         ? path.join(home, 'Library', 'Safari', 'Bookmarks.plist')

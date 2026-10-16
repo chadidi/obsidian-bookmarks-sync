@@ -29,7 +29,8 @@ export async function readBookmarks(
 
   switch (browser) {
     case 'chrome':
-      return { entries: await readChromeBookmarks(sourcePath, log), sourcePath };
+    case 'chromium':
+      return { entries: await readChromeBookmarks(sourcePath, log, browser), sourcePath };
     case 'firefox':
       return {
         entries: await readFirefoxBookmarks(sourcePath, { sqlite3Path: settings.sqlite3Path }, log),

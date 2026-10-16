@@ -6,7 +6,7 @@ Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into you
 
 ## Features
 
-- **Multi-browser support**: Import bookmarks directly from Google Chrome (and Chromium browsers like Brave, Edge), Safari (macOS), or Mozilla Firefox.
+- **Multi-browser support**: Import bookmarks directly from Google Chrome, Chromium (and other Chromium-based browsers like Brave, Edge), Safari (macOS), or Mozilla Firefox.
 - **Customizable templates**: Render bookmarks into notes using presets (Simple or Full) or craft your own template with placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
 - **Frontmatter ready**: Use filters like `{{title|yaml}}` to safely format text for YAML frontmatter.
 - **Hierarchy preservation**: Mirror your browser folder tree into vault subfolders, or save all bookmarks into a flat folder.
@@ -58,7 +58,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 
 | Browser | Default file location | Notes |
 |---|---|---|
-| **Chrome / Chromium** | `…/Chrome/Default/Bookmarks`, falling back to `…/Chrome/Default/AccountBookmarks` (macOS / Windows / Linux) | JSON file. When you are signed in, Chrome may store your bookmarks in `AccountBookmarks` instead; the plugin detects both. Custom profiles or Chromium browsers (e.g. Brave, Edge, Arc) can be used by providing their custom path in settings. |
+| **Google Chrome** | `…/Google/Chrome/Default/Bookmarks`, falling back to `…/AccountBookmarks` (macOS / Windows / Linux) | JSON file. When you are signed in, Chrome may store your bookmarks in `AccountBookmarks` instead; the plugin detects both. Custom profiles, or other Chromium-based browsers (e.g. Brave, Edge, Arc), can be used by providing their custom path in settings. |
+| **Chromium** | `…/Chromium/Default/Bookmarks`, falling back to `…/AccountBookmarks` (macOS / Windows / Linux) | Same JSON layout as Chrome. Detect the default Chromium profile automatically, or set a custom profile path in settings. |
 | **Safari** | `~/Library/Safari/Bookmarks.plist` (macOS) | Binary plist, parsed directly in-process. Because macOS protects `~/Library/Safari/`, either use **Choose Bookmarks.plist** in settings to grant read access to just that file for the session (no Full Disk Access needed), or grant Obsidian **Full Disk Access** in macOS **System Settings** → **Privacy & Security**. Reading List items are excluded. Safari stores no creation dates, so `{{date}}` uses the sync date. |
 | **Firefox** | Auto-detected `places.sqlite` or `bookmarkbackups/*.jsonlz4` | Reads live bookmarks from `places.sqlite` using the system `sqlite3` CLI tool on a temporary database snapshot. Alternatively, point to a `bookmarkbackups/*.jsonlz4` file or directory for native decompression without `sqlite3`. |
 
@@ -73,7 +74,7 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 | `{{folder_path}}` | Full browser folder path separated by `/` (e.g. `Bookmarks Bar/Dev/Obsidian`). |
 | `{{folder}}` | Immediate parent folder name (e.g. `Obsidian`). |
 | `{{domain}}` | Clean domain name without `www.` (e.g. `obsidian.md`). |
-| `{{browser}}` | Browser name (e.g. `Google Chrome`, `Safari`, `Firefox`). |
+| `{{browser}}` | Browser name (e.g. `Google Chrome`, `Chromium`, `Safari`, `Firefox`). |
 
 ### Filters
 
