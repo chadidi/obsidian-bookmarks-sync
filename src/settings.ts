@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   paths: { chrome: '', firefox: '', safari: '' },
   sqlite3Path: 'sqlite3',
   targetFolder: 'Bookmarks',
+  allowVaultRootTarget: false,
   rootFolder: '',
   folderStructure: 'folders',
   intervalMinutes: 0,
@@ -42,6 +43,15 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   debug: false,
   initialSyncDone: false,
 };
+
+/**
+ * True when the target folder resolves to the vault root (empty or "/"). Syncing there can
+ * overwrite or delete unrelated notes, so it requires an explicit confirmation.
+ */
+export function isVaultRootTarget(targetFolder: string): boolean {
+  const trimmed = targetFolder.trim();
+  return trimmed === '' || trimmed === '/';
+}
 
 const BROWSERS: BrowserType[] = ['chrome', 'firefox', 'safari'];
 
@@ -91,6 +101,8 @@ export function normalizeSettings(
   }
 
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
+  if (typeof merged.targetFolder !== 'string') merged.targetFolder = DEFAULT_SETTINGS.targetFolder;
+  merged.allowVaultRootTarget = raw?.allowVaultRootTarget === true;
   if (typeof merged.rootFolder !== 'string') merged.rootFolder = '';
   const FOLDER_STRUCTURES: FolderStructure[] = ['folders', 'flat'];
   if (!FOLDER_STRUCTURES.includes(merged.folderStructure)) merged.folderStructure = 'folders';

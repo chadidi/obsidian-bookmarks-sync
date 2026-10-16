@@ -49,7 +49,7 @@ export class SafariPickerModal extends Modal {
     input.addClass('bb-hidden-input');
     input.addEventListener('change', () => void this.handleSelection(input));
 
-    this.errorEl = contentEl.createDiv({ cls: 'mod-warning bb-picker-error' });
+    this.errorEl = contentEl.createDiv({ cls: 'bb-picker-error' });
     this.errorEl.hide();
 
     new Setting(contentEl)

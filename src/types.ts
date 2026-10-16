@@ -68,6 +68,11 @@ export interface BookmarkSettings {
   sqlite3Path: string;
   targetFolder: string;
   /**
+   * Explicit acknowledgement that lets sync run when targetFolder is empty or "/" (the vault root).
+   * Off by default; sync is blocked while it is false and the target is the vault root.
+   */
+  allowVaultRootTarget: boolean;
+  /**
    * Slash-separated path of the browser bookmark folder to sync.
    * Empty string = sync everything. Example: "Bookmarks Bar/Work".
    */

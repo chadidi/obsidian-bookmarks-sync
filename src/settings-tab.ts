@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 import type BookmarksSyncPlugin from './main';
 import { checkSourceAccess, defaultBrowserPath } from './paths';
-import { FULL_TEMPLATE, SIMPLE_TEMPLATE } from './settings';
+import { FULL_TEMPLATE, SIMPLE_TEMPLATE, isVaultRootTarget } from './settings';
 import { findUnknownPlaceholders } from './template';
 import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from './types';
 import { SafariPickerModal } from './ui/safari-picker-modal';
@@ -181,27 +181,42 @@ export class BookmarkSettingTab extends PluginSettingTab {
           .setValue(settings.targetFolder)
           .onChange((value) => {
             settings.targetFolder = value.trim();
-            refreshTargetWarning();
+            refreshTargetGuard();
             save();
           }),
       );
 
-    const targetWarningEl = containerEl.createDiv({
-      cls: 'setting-item-description bb-warning bb-access-hint',
-    });
-    const refreshTargetWarning = () => {
-      const trimmed = settings.targetFolder.trim();
-      const isRoot = trimmed === '' || trimmed === '/';
-      targetWarningEl.setText(
-        isRoot
-          ? 'Warning: an empty target folder writes the bookmark notes into the root of your vault. ' +
-              'Existing notes there that share a bookmark\u2019s name can be overwritten, and notes are ' +
-              'deleted when their bookmarks disappear. Set a dedicated folder instead.'
-          : '',
+    const targetGuardEl = containerEl.createDiv({ cls: 'bb-target-guard' });
+
+    const targetWarningEl = targetGuardEl.createDiv({ cls: 'setting-item-description bb-warning' });
+    targetWarningEl.setText(
+      'Warning: an empty target folder puts bookmark notes in your vault root. ' +
+        'Existing notes there can be overwritten or deleted. Set a folder, or confirm below.',
+    );
+
+    new Setting(targetGuardEl)
+      .setName('Allow syncing into the vault root')
+      .setDesc(
+        'Required while the target folder is empty. Sync stays blocked until you enable this.',
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(settings.allowVaultRootTarget).onChange(async (value) => {
+          settings.allowVaultRootTarget = value;
+          await this.plugin.saveSettings();
+        }),
       );
-      targetWarningEl.toggle(isRoot);
+
+    const refreshTargetGuard = () => {
+      const isRoot = isVaultRootTarget(settings.targetFolder);
+      // The acknowledgement only ever applies to a root configuration, so drop it as soon as
+      // the user picks a real folder and require a fresh confirmation if they clear it again.
+      if (!isRoot && settings.allowVaultRootTarget) {
+        settings.allowVaultRootTarget = false;
+        void this.plugin.saveSettings();
+      }
+      targetGuardEl.toggle(isRoot);
     };
-    refreshTargetWarning();
+    refreshTargetGuard();
 
     new Setting(containerEl)
       .setName('Folder structure')

@@ -25,12 +25,32 @@
   color: var(--text-warning);
 }
 
-.bb-access-hint {
-  margin-top: var(--size-4-2);
+/* Shared notice styling so every inline warning block looks identical. */
+.bb-access-hint,
+.bb-target-guard {
+  margin: var(--size-4-2) 0;
   padding: var(--size-4-2) var(--size-4-3);
   border-left: 3px solid var(--text-warning);
-  background-color: var(--background-secondary);
   border-radius: var(--radius-s);
+  background-color: var(--background-secondary);
+}
+
+/* Warning + its confirmation toggle rendered as a single block. */
+.bb-target-guard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.bb-target-guard .bb-warning {
+  margin: 0;
+}
+
+/* Blend the confirmation row into the block instead of looking like a separate setting row. */
+.bb-target-guard .setting-item {
+  padding: 0;
+  border: none;
+  background-color: transparent;
 }
 
 .bb-settings-nav-icon {
@@ -70,9 +90,10 @@
 }
 
 .bb-picker-error {
-  margin-top: var(--size-4-2);
+  margin: var(--size-4-2) 0;
   padding: var(--size-4-2) var(--size-4-3);
   border-left: 3px solid var(--text-error);
-  background-color: var(--background-secondary);
   border-radius: var(--radius-s);
+  color: var(--text-error);
+  background-color: var(--background-secondary);
 }

@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS,
   FULL_TEMPLATE,
   SIMPLE_TEMPLATE,
+  isVaultRootTarget,
 } from '../src/settings';
 
 test('normalizeSettings returns defaults when given undefined or empty object', () => {
@@ -66,4 +67,22 @@ test('normalizeSettings auto-detects legacy custom template without explicit pre
   assert.equal(legacyCustom.templatePreset, 'custom');
   assert.equal(legacyCustom.customTemplate, '# My Legacy Custom Template\n{{url}}');
   assert.equal(legacyCustom.template, '# My Legacy Custom Template\n{{url}}');
+});
+
+test('isVaultRootTarget only accepts an empty or "/" target folder', () => {
+  assert.equal(isVaultRootTarget(''), true);
+  assert.equal(isVaultRootTarget('   '), true);
+  assert.equal(isVaultRootTarget('/'), true);
+  assert.equal(isVaultRootTarget(' / '), true);
+  assert.equal(isVaultRootTarget('Bookmarks'), false);
+  assert.equal(isVaultRootTarget('Bookmarks/Sub'), false);
+});
+
+test('normalizeSettings defaults allowVaultRootTarget to false and coerces stray values', () => {
+  assert.equal(normalizeSettings({}).allowVaultRootTarget, false);
+  assert.equal(normalizeSettings({ allowVaultRootTarget: true }).allowVaultRootTarget, true);
+  assert.equal(
+    normalizeSettings({ allowVaultRootTarget: 'yes' as unknown as boolean }).allowVaultRootTarget,
+    false,
+  );
 });

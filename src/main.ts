@@ -1,7 +1,7 @@
 import { Notice, Plugin, TFolder, addIcon, debounce, moment, setIcon } from 'obsidian';
 import { errorMessage } from './errors';
 import { Logger } from './logger';
-import { normalizeSettings } from './settings';
+import { isVaultRootTarget, normalizeSettings } from './settings';
 import { BookmarkSettingTab } from './settings-tab';
 import { SyncEngine } from './sync';
 import type {
@@ -115,6 +115,18 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
 
   async syncNow(trigger: SyncTrigger): Promise<void> {
     const manual = trigger === 'manual';
+
+    if (isVaultRootTarget(this.settings.targetFolder) && !this.settings.allowVaultRootTarget) {
+      this.log.warn(`Sync (${trigger}) blocked: the target folder is the vault root`);
+      if (manual) {
+        new Notice(
+          'Sync blocked: the target folder is your vault root. Set a folder, or enable ' +
+            '"Allow syncing into the vault root" in settings.',
+          10000,
+        );
+      }
+      return;
+    }
 
     if (!manual && !this.settings.initialSyncDone) {
       this.log.info(`Automatic (${trigger}) sync skipped: run one manual sync first`);
