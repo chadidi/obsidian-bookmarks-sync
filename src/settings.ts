@@ -1,4 +1,4 @@
-import type { BookmarkSettings, BrowserType, FolderStructure, TemplatePreset } from "./types";
+import type { BookmarkSettings, BrowserType, FolderStructure, TemplatePreset } from './types';
 
 export const FULL_TEMPLATE = `---
 title: {{title|yaml}}
@@ -20,7 +20,7 @@ tags:
 export const SIMPLE_TEMPLATE = `[{{url}}]({{url}})
 `;
 
-export const PRESET_TEMPLATES: Record<"simple" | "full", string> = {
+export const PRESET_TEMPLATES: Record<'simple' | 'full', string> = {
   simple: SIMPLE_TEMPLATE,
   full: FULL_TEMPLATE,
 };
@@ -28,25 +28,27 @@ export const PRESET_TEMPLATES: Record<"simple" | "full", string> = {
 export const DEFAULT_TEMPLATE = SIMPLE_TEMPLATE;
 
 export const DEFAULT_SETTINGS: BookmarkSettings = {
-  browser: "chrome",
-  paths: { chrome: "", firefox: "", safari: "" },
-  sqlite3Path: "sqlite3",
-  targetFolder: "Bookmarks",
-  rootFolder: "",
-  folderStructure: "folders",
+  browser: 'chrome',
+  paths: { chrome: '', firefox: '', safari: '' },
+  sqlite3Path: 'sqlite3',
+  targetFolder: 'Bookmarks',
+  rootFolder: '',
+  folderStructure: 'folders',
   intervalMinutes: 0,
   syncOnStartup: true,
-  templatePreset: "simple",
+  templatePreset: 'simple',
   customTemplate: FULL_TEMPLATE,
   template: SIMPLE_TEMPLATE,
   debug: false,
   initialSyncDone: false,
 };
 
-const BROWSERS: BrowserType[] = ["chrome", "firefox", "safari"];
+const BROWSERS: BrowserType[] = ['chrome', 'firefox', 'safari'];
 
 /** Merges stored data over the defaults and repairs any invalid values. */
-export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | null): BookmarkSettings {
+export function normalizeSettings(
+  raw: Partial<BookmarkSettings> | undefined | null,
+): BookmarkSettings {
   const merged: BookmarkSettings = {
     ...DEFAULT_SETTINGS,
     ...(raw ?? {}),
@@ -58,38 +60,39 @@ export function normalizeSettings(raw: Partial<BookmarkSettings> | undefined | n
   }
   merged.intervalMinutes = Math.min(Math.floor(merged.intervalMinutes), 10080); // max one week
 
-  const PRESETS: TemplatePreset[] = ["simple", "full", "custom"];
+  const PRESETS: TemplatePreset[] = ['simple', 'full', 'custom'];
   if (!raw?.templatePreset || !PRESETS.includes(raw.templatePreset)) {
     if (raw?.template === SIMPLE_TEMPLATE || !raw?.template) {
-      merged.templatePreset = "simple";
+      merged.templatePreset = 'simple';
     } else if (raw?.template === FULL_TEMPLATE) {
-      merged.templatePreset = "full";
+      merged.templatePreset = 'full';
     } else {
-      merged.templatePreset = "custom";
+      merged.templatePreset = 'custom';
     }
   } else {
     merged.templatePreset = raw.templatePreset;
   }
 
-  const hasExplicitCustom = typeof raw?.customTemplate === "string" && Boolean(raw.customTemplate.trim());
+  const hasExplicitCustom =
+    typeof raw?.customTemplate === 'string' && Boolean(raw.customTemplate.trim());
   if (!hasExplicitCustom) {
     merged.customTemplate =
-      merged.templatePreset === "custom" && typeof raw?.template === "string" && raw.template.trim()
+      merged.templatePreset === 'custom' && typeof raw?.template === 'string' && raw.template.trim()
         ? raw.template
         : FULL_TEMPLATE;
   }
 
-  if (merged.templatePreset === "simple") {
+  if (merged.templatePreset === 'simple') {
     merged.template = SIMPLE_TEMPLATE;
-  } else if (merged.templatePreset === "full") {
+  } else if (merged.templatePreset === 'full') {
     merged.template = FULL_TEMPLATE;
   } else {
     merged.template = merged.customTemplate;
   }
 
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
-  if (typeof merged.rootFolder !== "string") merged.rootFolder = "";
-  const FOLDER_STRUCTURES: FolderStructure[] = ["folders", "flat"];
-  if (!FOLDER_STRUCTURES.includes(merged.folderStructure)) merged.folderStructure = "folders";
+  if (typeof merged.rootFolder !== 'string') merged.rootFolder = '';
+  const FOLDER_STRUCTURES: FolderStructure[] = ['folders', 'flat'];
+  if (!FOLDER_STRUCTURES.includes(merged.folderStructure)) merged.folderStructure = 'folders';
   return merged;
 }

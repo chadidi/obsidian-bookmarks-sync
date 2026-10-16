@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from 'crypto';
 
 const ZERO_WIDTH = /[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g;
 const REPLACE_WITH_DASH = /[\\/:|]+/g;
@@ -16,26 +16,26 @@ const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
  */
 export function sanitizeFileName(raw: string, maxLength = 100): string {
   let name = raw
-    .normalize("NFC")
-    .replace(ZERO_WIDTH, "")
-    .replace(REPLACE_WITH_DASH, "-")
-    .replace(STRIP, "")
-    .replace(/\s+/g, " ")
+    .normalize('NFC')
+    .replace(ZERO_WIDTH, '')
+    .replace(REPLACE_WITH_DASH, '-')
+    .replace(STRIP, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  name = name.replace(/^\.+/, "");
+  name = name.replace(/^\.+/, '');
   // Truncate by code point so we never cut a surrogate pair in half.
-  name = Array.from(name).slice(0, maxLength).join("");
-  name = name.replace(/[. ]+$/, "").trim();
+  name = Array.from(name).slice(0, maxLength).join('');
+  name = name.replace(/[. ]+$/, '').trim();
 
-  if (!name) name = "Untitled";
+  if (!name) name = 'Untitled';
   if (WINDOWS_RESERVED.test(name)) name = `_${name}`;
   return name;
 }
 
 /**
  * Sanitizes a folder name segment for use in a vault path.
- * Uses lighter rules than sanitizeFileName — characters like #, ^, [ ] are
+ * Uses lighter rules than sanitizeFileName: characters like #, ^, [ ] are
  * perfectly legal in folder names and must not be stripped (they only matter
  * for [[wikilinks]] in file names).
  *  - `\ /` become "-" (path separators would break the hierarchy)
@@ -49,24 +49,24 @@ export function sanitizeFolderName(raw: string, maxLength = 100): string {
   const FOLDER_STRIP = /[:*?"<>|\u0000-\u001f\u007f]/g;
 
   let name = raw
-    .normalize("NFC")
-    .replace(ZERO_WIDTH, "")
-    .replace(FOLDER_REPLACE_WITH_DASH, "-")
-    .replace(FOLDER_STRIP, "")
-    .replace(/\s+/g, " ")
+    .normalize('NFC')
+    .replace(ZERO_WIDTH, '')
+    .replace(FOLDER_REPLACE_WITH_DASH, '-')
+    .replace(FOLDER_STRIP, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  name = name.replace(/^\.+/, "");
-  name = Array.from(name).slice(0, maxLength).join("");
-  name = name.replace(/[. ]+$/, "").trim();
+  name = name.replace(/^\.+/, '');
+  name = Array.from(name).slice(0, maxLength).join('');
+  name = name.replace(/[. ]+$/, '').trim();
 
-  if (!name) name = "Untitled";
+  if (!name) name = 'Untitled';
   if (WINDOWS_RESERVED.test(name)) name = `_${name}`;
   return name;
 }
 
 export function shortHash(value: string, length = 6): string {
-  return createHash("sha1").update(value).digest("hex").slice(0, length);
+  return createHash('sha1').update(value).digest('hex').slice(0, length);
 }
 
 /** Lets the renderer paint and handle input between batches of work. */
@@ -75,7 +75,7 @@ export function yieldToUi(): Promise<void> {
 }
 
 export function joinVaultPath(folder: string, fileName: string): string {
-  return folder === "" || folder === "/" ? fileName : `${folder}/${fileName}`;
+  return folder === '' || folder === '/' ? fileName : `${folder}/${fileName}`;
 }
 
 export function hasOwn(obj: object, key: string): boolean {
@@ -91,8 +91,17 @@ export function hasOwn(obj: object, key: string): boolean {
  */
 export function getObsidianDateFormat(app: unknown): string {
   try {
-    const plugins = (app as { internalPlugins?: { getPluginById?: (id: string) => { enabled?: boolean; instance?: { options?: { format?: string } } } | null } }).internalPlugins;
-    const plugin = plugins?.getPluginById?.("daily-notes");
+    const plugins = (
+      app as {
+        internalPlugins?: {
+          getPluginById?: (id: string) => {
+            enabled?: boolean;
+            instance?: { options?: { format?: string } };
+          } | null;
+        };
+      }
+    ).internalPlugins;
+    const plugin = plugins?.getPluginById?.('daily-notes');
     if (plugin?.enabled) {
       const format = plugin.instance?.options?.format;
       if (format && format.trim()) return format.trim();
@@ -100,5 +109,5 @@ export function getObsidianDateFormat(app: unknown): string {
   } catch {
     // Silently fall through to the default.
   }
-  return "YYYY-MM-DD";
+  return 'YYYY-MM-DD';
 }

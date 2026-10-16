@@ -1,9 +1,9 @@
 export function resolve(specifier, context, nextResolve) {
-  if (specifier === "obsidian") {
+  if (specifier === 'obsidian') {
     return {
-      format: "module",
+      format: 'module',
       shortCircuit: true,
-      url: new URL("./obsidian.ts", import.meta.url).href,
+      url: new URL('./obsidian.ts', import.meta.url).href,
     };
   }
   return nextResolve(specifier, context);

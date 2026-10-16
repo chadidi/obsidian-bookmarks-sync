@@ -1,14 +1,14 @@
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import { BookmarkSourceError } from "./errors";
-import { BROWSER_LABELS, type BrowserType } from "./types";
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { BookmarkSourceError } from './errors';
+import { BROWSER_LABELS, type BrowserType } from './types';
 
 /** Expands `~`, `%VAR%`, `$VAR` and `${VAR}` in user-supplied paths. */
 export function expandPath(input: string): string {
   let p = input.trim();
-  if (!p) return "";
-  if (p === "~" || p.startsWith("~/") || p.startsWith("~\\")) {
+  if (!p) return '';
+  if (p === '~' || p.startsWith('~/') || p.startsWith('~\\')) {
     p = path.join(os.homedir(), p.slice(1));
   }
   p = p.replace(/%([^%]+)%/g, (m, name: string) => process.env[name] ?? m);
@@ -19,15 +19,22 @@ export function expandPath(input: string): string {
 function firefoxProfileRoots(): string[] {
   const home = os.homedir();
   switch (process.platform) {
-    case "darwin":
-      return [path.join(home, "Library", "Application Support", "Firefox", "Profiles")];
-    case "win32":
-      return [path.join(process.env.APPDATA ?? path.join(home, "AppData", "Roaming"), "Mozilla", "Firefox", "Profiles")];
+    case 'darwin':
+      return [path.join(home, 'Library', 'Application Support', 'Firefox', 'Profiles')];
+    case 'win32':
+      return [
+        path.join(
+          process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming'),
+          'Mozilla',
+          'Firefox',
+          'Profiles',
+        ),
+      ];
     default:
       return [
-        path.join(home, ".mozilla", "firefox"),
-        path.join(home, "snap", "firefox", "common", ".mozilla", "firefox"),
-        path.join(home, ".var", "app", "org.mozilla.firefox", ".mozilla", "firefox"),
+        path.join(home, '.mozilla', 'firefox'),
+        path.join(home, 'snap', 'firefox', 'common', '.mozilla', 'firefox'),
+        path.join(home, '.var', 'app', 'org.mozilla.firefox', '.mozilla', 'firefox'),
       ];
   }
 }
@@ -44,10 +51,14 @@ export function detectFirefoxPlacesPath(): string | null {
     }
     for (const dir of dirs) {
       if (!dir.isDirectory()) continue;
-      const file = path.join(root, dir.name, "places.sqlite");
+      const file = path.join(root, dir.name, 'places.sqlite');
       try {
         const stat = fs.statSync(file);
-        found.push({ file, score: dir.name.endsWith(".default-release") ? 1 : 0, mtime: stat.mtimeMs });
+        found.push({
+          file,
+          score: dir.name.endsWith('.default-release') ? 1 : 0,
+          mtime: stat.mtimeMs,
+        });
       } catch {
         /* profile without bookmarks database */
       }
@@ -61,22 +72,36 @@ export function detectFirefoxPlacesPath(): string | null {
 export function defaultBrowserPath(browser: BrowserType): string {
   const home = os.homedir();
   switch (browser) {
-    case "chrome":
+    case 'chrome':
       switch (process.platform) {
-        case "darwin":
-          return path.join(home, "Library", "Application Support", "Google", "Chrome", "Default", "Bookmarks");
-        case "win32":
+        case 'darwin':
           return path.join(
-            process.env.LOCALAPPDATA ?? path.join(home, "AppData", "Local"),
-            "Google", "Chrome", "User Data", "Default", "Bookmarks",
+            home,
+            'Library',
+            'Application Support',
+            'Google',
+            'Chrome',
+            'Default',
+            'Bookmarks',
+          );
+        case 'win32':
+          return path.join(
+            process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local'),
+            'Google',
+            'Chrome',
+            'User Data',
+            'Default',
+            'Bookmarks',
           );
         default:
-          return path.join(home, ".config", "google-chrome", "Default", "Bookmarks");
+          return path.join(home, '.config', 'google-chrome', 'Default', 'Bookmarks');
       }
-    case "safari":
-      return process.platform === "darwin" ? path.join(home, "Library", "Safari", "Bookmarks.plist") : "";
-    case "firefox":
-      return detectFirefoxPlacesPath() ?? "";
+    case 'safari':
+      return process.platform === 'darwin'
+        ? path.join(home, 'Library', 'Safari', 'Bookmarks.plist')
+        : '';
+    case 'firefox':
+      return detectFirefoxPlacesPath() ?? '';
   }
 }
 

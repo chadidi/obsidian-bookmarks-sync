@@ -1,4 +1,4 @@
-import { BROWSER_LABELS, type BrowserType } from "./types";
+import { BROWSER_LABELS, type BrowserType } from './types';
 
 export interface TemplateContext {
   title: string;
@@ -14,14 +14,14 @@ export interface TemplateContext {
 export type DateFormatter = (date: Date, format: string) => string;
 
 export const PLACEHOLDERS = [
-  "title",
-  "url",
-  "date",
-  "folder_path",
-  "folder",
-  "domain",
-  "browser",
-  "synced",
+  'title',
+  'url',
+  'date',
+  'folder_path',
+  'folder',
+  'domain',
+  'browser',
+  'synced',
 ] as const;
 
 /**
@@ -32,20 +32,20 @@ const PLACEHOLDER_RE = /\{\{\s*([A-Za-z_]+)(?::([^|}]*))?(?:\|\s*([A-Za-z]+))?\s
 
 function domainOf(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return "";
+    return '';
   }
 }
 
 function applyFilter(value: string, filter: string | undefined): string {
-  switch ((filter ?? "").toLowerCase()) {
-    case "yaml":
+  switch ((filter ?? '').toLowerCase()) {
+    case 'yaml':
       // A JSON string is a valid YAML double-quoted scalar: safe for titles with ":" or quotes.
       return JSON.stringify(value);
-    case "lower":
+    case 'lower':
       return value.toLowerCase();
-    case "upper":
+    case 'upper':
       return value.toUpperCase();
     default:
       return value;
@@ -58,38 +58,41 @@ export function renderTemplate(
   formatDate: DateFormatter,
   defaultDateFormat: string,
 ): string {
-  return template.replace(PLACEHOLDER_RE, (match, rawName: string, arg: string | undefined, filter: string | undefined) => {
-    let value: string;
-    switch (rawName.toLowerCase()) {
-      case "title":
-        value = ctx.title;
-        break;
-      case "url":
-        value = ctx.url;
-        break;
-      case "date":
-        value = formatDate(ctx.date, arg?.trim() || defaultDateFormat);
-        break;
-      case "synced":
-        value = formatDate(ctx.synced, arg?.trim() || defaultDateFormat);
-        break;
-      case "folder_path":
-        value = ctx.folderPath.join("/");
-        break;
-      case "folder":
-        value = ctx.folderPath[ctx.folderPath.length - 1] ?? "";
-        break;
-      case "domain":
-        value = domainOf(ctx.url);
-        break;
-      case "browser":
-        value = BROWSER_LABELS[ctx.browser];
-        break;
-      default:
-        return match; // unknown placeholder: leave untouched so the mistake is visible
-    }
-    return applyFilter(value, filter);
-  });
+  return template.replace(
+    PLACEHOLDER_RE,
+    (match, rawName: string, arg: string | undefined, filter: string | undefined) => {
+      let value: string;
+      switch (rawName.toLowerCase()) {
+        case 'title':
+          value = ctx.title;
+          break;
+        case 'url':
+          value = ctx.url;
+          break;
+        case 'date':
+          value = formatDate(ctx.date, arg?.trim() || defaultDateFormat);
+          break;
+        case 'synced':
+          value = formatDate(ctx.synced, arg?.trim() || defaultDateFormat);
+          break;
+        case 'folder_path':
+          value = ctx.folderPath.join('/');
+          break;
+        case 'folder':
+          value = ctx.folderPath[ctx.folderPath.length - 1] ?? '';
+          break;
+        case 'domain':
+          value = domainOf(ctx.url);
+          break;
+        case 'browser':
+          value = BROWSER_LABELS[ctx.browser];
+          break;
+        default:
+          return match; // unknown placeholder: leave untouched so the mistake is visible
+      }
+      return applyFilter(value, filter);
+    },
+  );
 }
 
 export function findUnknownPlaceholders(template: string): string[] {

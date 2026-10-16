@@ -3,36 +3,35 @@
  */
 
 export function normalizePath(path: string): string {
-  return path
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\/+/, "")
-    .replace(/\/+$/, "");
+  return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
 }
 
 export class TAbstractFile {
-  path = "";
-  name = "";
+  path = '';
+  name = '';
   parent: TFolder | null = null;
   vault: any = null;
 }
 
 export class TFile extends TAbstractFile {
   stat = { ctime: Date.now(), mtime: Date.now(), size: 0 };
-  basename = "";
-  extension = "md";
+  basename = '';
+  extension = 'md';
 }
 
 export class TFolder extends TAbstractFile {
   children: TAbstractFile[] = [];
 
   isRoot(): boolean {
-    return this.path === "" || this.path === "/";
+    return this.path === '' || this.path === '/';
   }
 }
 
 export class Notice {
-  constructor(public message: string | DocumentFragment, public duration?: number) {}
+  constructor(
+    public message: string | DocumentFragment,
+    public duration?: number,
+  ) {}
 }
 
 export class Plugin {
@@ -45,8 +44,11 @@ export class Plugin {
 }
 
 export class PluginSettingTab {
-  icon = "";
-  constructor(public app: any, public plugin: any) {}
+  icon = '';
+  constructor(
+    public app: any,
+    public plugin: any,
+  ) {}
   display(): void {}
   hide(): void {}
 }
@@ -55,8 +57,12 @@ export function setIcon(_parent: any, _icon: string): void {}
 
 export class Setting {
   constructor(public containerEl: any) {}
-  setName(_name: string): this { return this; }
-  setDesc(_desc: string): this { return this; }
+  setName(_name: string): this {
+    return this;
+  }
+  setDesc(_desc: string): this {
+    return this;
+  }
   addText(cb: (comp: any) => any): this {
     cb({
       setPlaceholder: () => this,
@@ -115,8 +121,8 @@ export function moment(date?: any) {
   const d = date ? new Date(date) : new Date();
   return {
     format(fmt: string) {
-      if (fmt === "YYYY-MM-DD") return d.toISOString().slice(0, 10);
-      if (fmt === "YYYY-MM-DD HH:mm") return d.toISOString().slice(0, 16).replace("T", " ");
+      if (fmt === 'YYYY-MM-DD') return d.toISOString().slice(0, 10);
+      if (fmt === 'YYYY-MM-DD HH:mm') return d.toISOString().slice(0, 16).replace('T', ' ');
       return d.toISOString();
     },
   };

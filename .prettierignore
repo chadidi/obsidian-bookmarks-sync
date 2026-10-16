@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Compiled / build output (bundled by esbuild, not source)
+main.js
+dist/
+*.map
+
+# Non JS/TS files (only TypeScript/JavaScript sources should be formatted)
+*.json
+*.md
+*.css
+*.yml
+*.yaml
+*.html
+*.png
+*.svg
+
+# Misc non-source files
+LICENSE
+.editorconfig
+.npmrc

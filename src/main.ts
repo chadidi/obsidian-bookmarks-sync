@@ -1,10 +1,10 @@
-import { Notice, Plugin, TFolder, addIcon, debounce, moment, setIcon } from "obsidian";
-import { errorMessage } from "./errors";
-import { Logger } from "./logger";
-import { normalizeSettings } from "./settings";
-import { BookmarkSettingTab } from "./settings-tab";
-import { SyncEngine } from "./sync";
-import type { BookmarkSettings, PluginData, SyncHost, SyncResult, SyncTrigger } from "./types";
+import { Notice, Plugin, TFolder, addIcon, debounce, moment, setIcon } from 'obsidian';
+import { errorMessage } from './errors';
+import { Logger } from './logger';
+import { normalizeSettings } from './settings';
+import { BookmarkSettingTab } from './settings-tab';
+import { SyncEngine } from './sync';
+import type { BookmarkSettings, PluginData, SyncHost, SyncResult, SyncTrigger } from './types';
 
 // Obsidian re-exports moment.js, but its typings are not directly callable under esModuleInterop.
 const formatWithMoment = (date: Date, format: string): string =>
@@ -17,7 +17,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
 
   private engine!: SyncEngine;
   private intervalId: number | null = null;
-  private lastAutomaticError = "";
+  private lastAutomaticError = '';
   private readonly saveIndexSoon = debounce(() => void this.persist(), 1000, true);
 
   async onload(): Promise<void> {
@@ -29,19 +29,19 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     // Obsidian bundles an older Lucide version; addIcon() lets us ship the up-to-date path.
     // The path is authored for a 24×24 canvas; scale(4.167) maps it to Obsidian's required 100×100 viewBox.
     addIcon(
-      "bookmarks-sync",
+      'bookmarks-sync',
       `<g transform="scale(4.167)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>
       </g>`,
     );
 
     // Manual sync: ribbon button + command palette.
-    this.addRibbonIcon("bookmarks-sync", "Sync bookmarks now", () => void this.syncNow("manual"));
+    this.addRibbonIcon('bookmarks-sync', 'Sync bookmarks now', () => void this.syncNow('manual'));
     this.addCommand({
-      id: "sync-now",
-      name: "Sync bookmarks now",
-      icon: "bookmarks-sync",
-      callback: () => void this.syncNow("manual"),
+      id: 'sync-now',
+      name: 'Sync bookmarks now',
+      icon: 'bookmarks-sync',
+      callback: () => void this.syncNow('manual'),
     });
 
     const settingTab = new BookmarkSettingTab(this.app, this);
@@ -50,29 +50,29 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     // setIcon() appends to the element, so we create a dedicated span, prepend it, then set the icon.
     const navEl = (settingTab as unknown as { navEl?: HTMLElement }).navEl;
     if (navEl) {
-      const iconEl = navEl.createSpan({ cls: "bb-settings-nav-icon" });
+      const iconEl = navEl.createSpan({ cls: 'bb-settings-nav-icon' });
       navEl.prepend(iconEl);
-      setIcon(iconEl, "bookmarks-sync");
+      setIcon(iconEl, 'bookmarks-sync');
     }
 
     // Keep the bookmark -> note index valid when the user renames or moves notes.
     this.registerEvent(
-      this.app.vault.on("rename", (file, oldPath) => {
+      this.app.vault.on('rename', (file, oldPath) => {
         this.engine.handleRename(oldPath, file.path, file instanceof TFolder);
       }),
     );
 
     this.schedulePeriodicSync();
     if (this.settings.syncOnStartup) {
-      this.app.workspace.onLayoutReady(() => void this.syncNow("startup"));
+      this.app.workspace.onLayoutReady(() => void this.syncNow('startup'));
     }
-    this.log.debug("Plugin loaded");
+    this.log.debug('Plugin loaded');
   }
 
   onunload(): void {
     // The interval and vault events are registered via register*(), so Obsidian removes them for us.
     void this.persist();
-    this.log.debug("Plugin unloaded");
+    this.log.debug('Plugin unloaded');
   }
 
   /* ------------------------------------------------------------------ */
@@ -87,11 +87,13 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     }
     const minutes = this.settings.intervalMinutes;
     if (!Number.isFinite(minutes) || minutes <= 0) {
-      this.log.info("Periodic sync is disabled");
+      this.log.info('Periodic sync is disabled');
       return;
     }
     const ms = minutes * 60 * 1000;
-    this.intervalId = this.registerInterval(window.setInterval(() => void this.syncNow("periodic"), ms));
+    this.intervalId = this.registerInterval(
+      window.setInterval(() => void this.syncNow('periodic'), ms),
+    );
     this.log.info(`Periodic sync scheduled every ${minutes} minute(s)`);
   }
 
@@ -100,21 +102,21 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
   /* ------------------------------------------------------------------ */
 
   async syncNow(trigger: SyncTrigger): Promise<void> {
-    const manual = trigger === "manual";
+    const manual = trigger === 'manual';
 
     if (!manual && !this.settings.initialSyncDone) {
       this.log.info(`Automatic (${trigger}) sync skipped: run one manual sync first`);
       return;
     }
 
-    const progress = manual ? new Notice("Syncing bookmarks…", 0) : null;
+    const progress = manual ? new Notice('Syncing bookmarks…', 0) : null;
     try {
       const result = await this.engine.run(trigger);
       if (!result) {
-        if (manual) new Notice("A bookmark sync is already running.");
+        if (manual) new Notice('A bookmark sync is already running.');
         return;
       }
-      this.lastAutomaticError = "";
+      this.lastAutomaticError = '';
       if (!this.settings.initialSyncDone) {
         this.settings.initialSyncDone = true;
         await this.saveSettings();
@@ -142,7 +144,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     if (r.unchanged) parts.push(`${r.unchanged} unchanged`);
     if (r.duplicates) parts.push(`${r.duplicates} duplicate URLs ignored`);
     if (r.failed) parts.push(`${r.failed} failed (see console)`);
-    return `Bookmark sync complete: ${parts.join(", ")} (${(r.durationMs / 1000).toFixed(1)}s).`;
+    return `Bookmark sync complete: ${parts.join(', ')} (${(r.durationMs / 1000).toFixed(1)}s).`;
   }
 
   /* ------------------------------------------------------------------ */
@@ -152,7 +154,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
   private async loadPluginData(): Promise<void> {
     const raw = (await this.loadData()) as Partial<PluginData> | null;
     this.settings = normalizeSettings(raw?.settings);
-    this.index = raw?.index && typeof raw.index === "object" ? { ...raw.index } : {};
+    this.index = raw?.index && typeof raw.index === 'object' ? { ...raw.index } : {};
   }
 
   private async persist(): Promise<void> {
@@ -160,7 +162,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
       const data: PluginData = { settings: this.settings, index: this.index };
       await this.saveData(data);
     } catch (err) {
-      this.log.error("Could not save plugin data", err);
+      this.log.error('Could not save plugin data', err);
     }
   }
 

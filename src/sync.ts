@@ -3,11 +3,7 @@ import { errorMessage } from './errors';
 import type { Logger } from './logger';
 import { DEFAULT_TEMPLATE } from './settings';
 import { readBookmarks } from './sources';
-import {
-  findUnknownPlaceholders,
-  renderTemplate,
-  type DateFormatter,
-} from './template';
+import { findUnknownPlaceholders, renderTemplate, type DateFormatter } from './template';
 import type { BookmarkEntry, SyncHost, SyncResult, SyncTrigger } from './types';
 import {
   hasOwn,
@@ -70,9 +66,7 @@ function filterByRootFolder(
     return lower.every((seg, i) => e.folderPath[i]?.toLowerCase() === seg);
   });
 
-  log.debug(
-    `Root-folder filter "${rootFolder}": ${entries.length} → ${filtered.length} bookmarks`,
-  );
+  log.debug(`Root-folder filter "${rootFolder}": ${entries.length} → ${filtered.length} bookmarks`);
   return filtered;
 }
 
@@ -83,7 +77,7 @@ export class SyncEngine {
     private readonly app: App,
     private readonly host: SyncHost,
     private readonly formatDate: DateFormatter,
-  ) { }
+  ) {}
 
   get isRunning(): boolean {
     return this.running;
@@ -92,23 +86,14 @@ export class SyncEngine {
   /** Returns null if another sync is already in progress. Throws on source-level failures. */
   async run(trigger: SyncTrigger): Promise<SyncResult | null> {
     if (this.running) {
-      this.host.log.warn(
-        `Sync (${trigger}) skipped: a previous sync is still running`,
-      );
+      this.host.log.warn(`Sync (${trigger}) skipped: a previous sync is still running`);
       return null;
     }
     this.running = true;
     const started = Date.now();
     try {
-      const { entries } = await readBookmarks(
-        this.host.settings,
-        this.host.log,
-      );
-      const filtered = filterByRootFolder(
-        entries,
-        this.host.settings.rootFolder,
-        this.host.log,
-      );
+      const { entries } = await readBookmarks(this.host.settings, this.host.log);
+      const filtered = filterByRootFolder(entries, this.host.settings.rootFolder, this.host.log);
       // Pass the unfiltered entries too, so a bookmark that merely falls outside the
       // configured rootFolder is not mistaken for one that was deleted in the browser.
       const result = await this.apply(filtered, entries);
@@ -161,19 +146,14 @@ export class SyncEngine {
     const folder = normalizePath(settings.targetFolder.trim() || '/');
     await this.ensureFolder(folder);
 
-    const template = settings.template.trim()
-      ? settings.template
-      : DEFAULT_TEMPLATE;
+    const template = settings.template.trim() ? settings.template : DEFAULT_TEMPLATE;
     const unknown = findUnknownPlaceholders(template);
     if (unknown.length)
-      log.warn(
-        `Template has unknown placeholders (left as-is): ${unknown.join(', ')}`,
-      );
+      log.warn(`Template has unknown placeholders (left as-is): ${unknown.join(', ')}`);
 
     // path -> bookmark key, so we never hand one note to two different bookmarks.
     const owner = new Map<string, string>();
-    for (const [key, p] of Object.entries(this.host.index))
-      owner.set(p, key);
+    for (const [key, p] of Object.entries(this.host.index)) owner.set(p, key);
 
     // Pre-compute root folder segments once so syncEntry can strip them.
     const rootSegments = parseRootFolderSegments(settings.rootFolder);
@@ -209,10 +189,7 @@ export class SyncEngine {
       } catch (err) {
         // Error boundary: one bad bookmark must not abort the whole sync.
         result.failed++;
-        log.error(
-          `Failed to sync "${entry.title}" <${key}>: ${errorMessage(err)}`,
-          err,
-        );
+        log.error(`Failed to sync "${entry.title}" <${key}>: ${errorMessage(err)}`, err);
       }
     }
 
@@ -222,11 +199,7 @@ export class SyncEngine {
       const k = e.url.trim();
       if (k) browserKeys.add(k);
     }
-    result.removed = await this.removeDeletedBookmarks(
-      browserKeys,
-      owner,
-      foldersToCheck,
-    );
+    result.removed = await this.removeDeletedBookmarks(browserKeys, owner, foldersToCheck);
 
     if (foldersToCheck.size > 0) {
       await this.cleanEmptyFolders(foldersToCheck, folder);
@@ -252,11 +225,7 @@ export class SyncEngine {
     const vault = this.app.vault;
 
     // Compute the destination folder for this entry.
-    const noteFolder = this.resolveNoteFolder(
-      entry,
-      baseFolder,
-      rootSegments,
-    );
+    const noteFolder = this.resolveNoteFolder(entry, baseFolder, rootSegments);
     if (noteFolder !== baseFolder) await this.ensureFolder(noteFolder);
 
     const target = await this.resolveTarget(entry, key, noteFolder, owner);
@@ -270,13 +239,7 @@ export class SyncEngine {
         await this.ensureFolder(desiredFolder);
         const oldFolder = currentFolder;
         const oldPath = target.file.path;
-        const newPath = await this.resolveMovePath(
-          target.file,
-          entry,
-          key,
-          desiredFolder,
-          owner,
-        );
+        const newPath = await this.resolveMovePath(target.file, entry, key, desiredFolder, owner);
         await this.moveFile(target.file, newPath);
         owner.delete(oldPath);
         owner.set(newPath, key);
@@ -334,11 +297,7 @@ export class SyncEngine {
     return normalizePath(`${baseFolder}/${sanitized}`);
   }
 
-  private render(
-    entry: BookmarkEntry,
-    template: string,
-    syncedAt: Date,
-  ): string {
+  private render(entry: BookmarkEntry, template: string, syncedAt: Date): string {
     const dateFormat = getObsidianDateFormat(this.app);
     return withTrailingNewline(
       renderTemplate(
@@ -385,24 +344,17 @@ export class SyncEngine {
     }
 
     const base = sanitizeFileName(entry.title || fallbackTitle(entry.url));
-    const names = [
-      base,
-      `${base} (${shortHash(key, 6)})`,
-      `${base} (${shortHash(key, 12)})`,
-    ];
+    const names = [base, `${base} (${shortHash(key, 6)})`, `${base} (${shortHash(key, 12)})`];
 
     for (const name of names) {
-      const candidate = normalizePath(
-        joinVaultPath(folder, `${name}.md`),
-      );
+      const candidate = normalizePath(joinVaultPath(folder, `${name}.md`));
       const claimedBy = owner.get(candidate);
       if (claimedBy !== undefined && claimedBy !== key) continue;
 
       const existing = vault.getAbstractFileByPath(candidate);
       if (existing instanceof TFile) {
         const content = await vault.cachedRead(existing);
-        if (content.includes(key))
-          return { path: candidate, file: existing }; // adopt
+        if (content.includes(key)) return { path: candidate, file: existing }; // adopt
         continue; // unrelated note with the same name
       }
       if (existing) continue; // a folder with that name
@@ -419,27 +371,21 @@ export class SyncEngine {
     const vault = this.app.vault;
     const existing = vault.getAbstractFileByPath(folder);
     if (existing instanceof TFolder) return;
-    if (existing)
-      throw new Error(`"${folder}" exists but is a file, not a folder`);
+    if (existing) throw new Error(`"${folder}" exists but is a file, not a folder`);
     try {
       await vault.createFolder(folder);
     } catch (err) {
       // Lost a race with another creator? Fine if the folder is there now.
-      if (!(vault.getAbstractFileByPath(folder) instanceof TFolder))
-        throw err;
+      if (!(vault.getAbstractFileByPath(folder) instanceof TFolder)) throw err;
     }
   }
 
   private getFileFolder(file: TFile): string {
     if (file.parent && typeof file.parent.path === 'string') {
-      return file.parent.isRoot?.()
-        ? ''
-        : normalizePath(file.parent.path);
+      return file.parent.isRoot?.() ? '' : normalizePath(file.parent.path);
     }
     const lastSlash = file.path.lastIndexOf('/');
-    return lastSlash === -1
-      ? ''
-      : normalizePath(file.path.slice(0, lastSlash));
+    return lastSlash === -1 ? '' : normalizePath(file.path.slice(0, lastSlash));
   }
 
   private async moveFile(file: TFile, newPath: string): Promise<void> {
@@ -467,17 +413,13 @@ export class SyncEngine {
     };
 
     // 1. Try preserving current file name
-    const preferredPath = normalizePath(
-      joinVaultPath(desiredFolder, file.name),
-    );
+    const preferredPath = normalizePath(joinVaultPath(desiredFolder, file.name));
     if (await isAvailable(preferredPath)) {
       return preferredPath;
     }
 
     // 2. Disambiguate using short hashes
-    const base = sanitizeFileName(
-      file.basename || entry.title || fallbackTitle(entry.url),
-    );
+    const base = sanitizeFileName(file.basename || entry.title || fallbackTitle(entry.url));
     const hashedCandidates = [
       `${base} (${shortHash(key, 6)}).md`,
       `${base} (${shortHash(key, 12)}).md`,
@@ -491,33 +433,20 @@ export class SyncEngine {
     // 3. Fallback counter
     let counter = 1;
     while (counter < 1000) {
-      const p = normalizePath(
-        joinVaultPath(desiredFolder, `${base} (${counter}).md`),
-      );
+      const p = normalizePath(joinVaultPath(desiredFolder, `${base} (${counter}).md`));
       if (await isAvailable(p)) return p;
       counter++;
     }
 
-    throw new Error(
-      `No free file path found when moving "${file.path}" to "${desiredFolder}"`,
-    );
+    throw new Error(`No free file path found when moving "${file.path}" to "${desiredFolder}"`);
   }
 
-  private async cleanEmptyFolders(
-    folderPaths: Set<string>,
-    baseFolder: string,
-  ): Promise<void> {
+  private async cleanEmptyFolders(folderPaths: Set<string>, baseFolder: string): Promise<void> {
     const vault = this.app.vault;
-    const sorted = Array.from(folderPaths).sort(
-      (a, b) => b.length - a.length,
-    );
+    const sorted = Array.from(folderPaths).sort((a, b) => b.length - a.length);
 
     for (let currentPath of sorted) {
-      while (
-        currentPath &&
-        currentPath !== baseFolder &&
-        currentPath !== '/'
-      ) {
+      while (currentPath && currentPath !== baseFolder && currentPath !== '/') {
         // Never delete a top-level vault folder
         const lastSlash = currentPath.lastIndexOf('/');
         if (lastSlash === -1) break;
@@ -572,10 +501,7 @@ export class SyncEngine {
         removed++;
         if (folder) foldersToCheck.add(folder);
       } catch (err) {
-        log.error(
-          `Failed to delete note for removed bookmark "${key}": ${errorMessage(err)}`,
-          err,
-        );
+        log.error(`Failed to delete note for removed bookmark "${key}": ${errorMessage(err)}`, err);
       }
     }
 
@@ -586,11 +512,7 @@ export class SyncEngine {
     const index = this.host.index;
     for (const key of Object.keys(index)) {
       const p = index[key];
-      if (
-        !p ||
-        !(this.app.vault.getAbstractFileByPath(p) instanceof TFile)
-      )
-        delete index[key];
+      if (!p || !(this.app.vault.getAbstractFileByPath(p) instanceof TFile)) delete index[key];
     }
   }
 }

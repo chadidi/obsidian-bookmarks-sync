@@ -1,4 +1,4 @@
-declare module "bplist-parser" {
+declare module 'bplist-parser' {
   interface BplistParser {
     /** Parses a binary plist. Returns an array whose first element is the root object. */
     parseBuffer(buffer: Uint8Array): unknown[];
