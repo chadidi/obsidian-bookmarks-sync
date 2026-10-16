@@ -114,7 +114,7 @@ export class SyncEngine {
   private async apply(entries: BookmarkEntry[]): Promise<SyncResult> {
     const { settings, log } = this.host;
     const result: SyncResult = {
-      total: entries.length, created: 0, updated: 0, unchanged: 0,
+      total: entries.length, created: 0, updated: 0, moved: 0, unchanged: 0,
       skipped: 0, duplicates: 0, failed: 0, durationMs: 0,
     };
 
@@ -133,6 +133,7 @@ export class SyncEngine {
     const rootSegments = parseRootFolderSegments(settings.rootFolder);
 
     const seen = new Set<string>();
+    const foldersToCheck = new Set<string>();
     const syncedAt = new Date();
     let handled = 0;
 
@@ -148,12 +149,16 @@ export class SyncEngine {
       seen.add(key);
 
       try {
-        await this.syncEntry(entry, key, folder, rootSegments, template, syncedAt, owner, result);
+        await this.syncEntry(entry, key, folder, rootSegments, template, syncedAt, owner, foldersToCheck, result);
       } catch (err) {
         // Error boundary: one bad bookmark must not abort the whole sync.
         result.failed++;
         log.error(`Failed to sync "${entry.title}" <${key}>: ${errorMessage(err)}`, err);
       }
+    }
+
+    if (foldersToCheck.size > 0) {
+      await this.cleanEmptyFolders(foldersToCheck, folder);
     }
 
     this.pruneIndex();
@@ -169,6 +174,7 @@ export class SyncEngine {
     template: string,
     syncedAt: Date,
     owner: Map<string, string>,
+    foldersToCheck: Set<string>,
     result: SyncResult,
   ): Promise<void> {
     const { index } = this.host;
@@ -181,8 +187,26 @@ export class SyncEngine {
     const target = await this.resolveTarget(entry, key, noteFolder, owner);
 
     if (target.file) {
-      index[key] = target.path;
-      owner.set(target.path, key);
+      const currentFolder = this.getFileFolder(target.file);
+      const desiredFolder = normalizePath(noteFolder);
+      let moved = false;
+
+      if (currentFolder !== desiredFolder) {
+        await this.ensureFolder(desiredFolder);
+        const oldFolder = currentFolder;
+        const oldPath = target.file.path;
+        const newPath = await this.resolveMovePath(target.file, entry, key, desiredFolder, owner);
+        await this.moveFile(target.file, newPath);
+        owner.delete(oldPath);
+        owner.set(newPath, key);
+        index[key] = newPath;
+        target.path = newPath;
+        moved = true;
+        if (oldFolder) foldersToCheck.add(oldFolder);
+      } else {
+        index[key] = target.path;
+        owner.set(target.path, key);
+      }
 
       // 1-way sync: always overwrite with the latest template render.
       const content = this.render(entry, template, syncedAt);
@@ -193,8 +217,9 @@ export class SyncEngine {
         changed = true;
         return content;
       });
+      if (moved) result.moved++;
       if (changed) result.updated++;
-      else result.unchanged++;
+      else if (!moved) result.unchanged++;
       return;
     }
 
@@ -304,6 +329,93 @@ export class SyncEngine {
     } catch (err) {
       // Lost a race with another creator? Fine if the folder is there now.
       if (!(vault.getAbstractFileByPath(folder) instanceof TFolder)) throw err;
+    }
+  }
+
+  private getFileFolder(file: TFile): string {
+    if (file.parent && typeof file.parent.path === "string") {
+      return file.parent.isRoot?.() ? "" : normalizePath(file.parent.path);
+    }
+    const lastSlash = file.path.lastIndexOf("/");
+    return lastSlash === -1 ? "" : normalizePath(file.path.slice(0, lastSlash));
+  }
+
+  private async moveFile(file: TFile, newPath: string): Promise<void> {
+    await this.app.fileManager.renameFile(file, newPath);
+  }
+
+  private async resolveMovePath(
+    file: TFile,
+    entry: BookmarkEntry,
+    key: string,
+    desiredFolder: string,
+    owner: Map<string, string>,
+  ): Promise<string> {
+    const vault = this.app.vault;
+
+    const isAvailable = async (candidate: string): Promise<boolean> => {
+      const claimedBy = owner.get(candidate);
+      if (claimedBy !== undefined && claimedBy !== key) return false;
+      const existing = vault.getAbstractFileByPath(candidate);
+      if (existing && existing !== file) return false;
+      if (await vault.adapter.exists(candidate)) {
+        if (candidate !== file.path) return false;
+      }
+      return true;
+    };
+
+    // 1. Try preserving current file name
+    const preferredPath = normalizePath(joinVaultPath(desiredFolder, file.name));
+    if (await isAvailable(preferredPath)) {
+      return preferredPath;
+    }
+
+    // 2. Disambiguate using short hashes
+    const base = sanitizeFileName(file.basename || entry.title || fallbackTitle(entry.url));
+    const hashedCandidates = [
+      `${base} (${shortHash(key, 6)}).md`,
+      `${base} (${shortHash(key, 12)}).md`,
+    ];
+
+    for (const cand of hashedCandidates) {
+      const p = normalizePath(joinVaultPath(desiredFolder, cand));
+      if (await isAvailable(p)) return p;
+    }
+
+    // 3. Fallback counter
+    let counter = 1;
+    while (counter < 1000) {
+      const p = normalizePath(joinVaultPath(desiredFolder, `${base} (${counter}).md`));
+      if (await isAvailable(p)) return p;
+      counter++;
+    }
+
+    throw new Error(`No free file path found when moving "${file.path}" to "${desiredFolder}"`);
+  }
+
+  private async cleanEmptyFolders(folderPaths: Set<string>, baseFolder: string): Promise<void> {
+    const vault = this.app.vault;
+    const sorted = Array.from(folderPaths).sort((a, b) => b.length - a.length);
+
+    for (let currentPath of sorted) {
+      while (currentPath && currentPath !== baseFolder && currentPath !== "/") {
+        // Never delete a top-level vault folder
+        const lastSlash = currentPath.lastIndexOf("/");
+        if (lastSlash === -1) break;
+
+        const folder = vault.getAbstractFileByPath(currentPath);
+        if (!(folder instanceof TFolder)) break;
+        if (folder.children.length > 0) break;
+
+        try {
+          await this.app.vault.trash(folder, false);
+        } catch (err) {
+          this.host.log.debug(`Could not remove empty folder "${currentPath}": ${errorMessage(err)}`);
+          break;
+        }
+
+        currentPath = currentPath.slice(0, lastSlash);
+      }
     }
   }
 

@@ -25,12 +25,39 @@ function createMockVault() {
         const file = new TFile();
         file.path = path;
         file.name = path.split("/").pop() ?? "";
+        const parentPath = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+        if (parentPath) {
+          const parent = new TFolder();
+          parent.path = parentPath;
+          parent.name = parentPath.split("/").pop() ?? "";
+          file.parent = parent;
+        }
         return file;
       }
       if (folders.has(path)) {
         const folder = new TFolder();
         folder.path = path;
         folder.name = path.split("/").pop() ?? "";
+        const children: any[] = [];
+        for (const f of files.keys()) {
+          const p = f.includes("/") ? f.slice(0, f.lastIndexOf("/")) : "";
+          if (p === path) {
+            const cf = new TFile();
+            cf.path = f;
+            cf.name = f.split("/").pop() ?? "";
+            children.push(cf);
+          }
+        }
+        for (const fd of folders) {
+          const p = fd.includes("/") ? fd.slice(0, fd.lastIndexOf("/")) : "";
+          if (p === path && fd !== path) {
+            const cfd = new TFolder();
+            cfd.path = fd;
+            cfd.name = fd.split("/").pop() ?? "";
+            children.push(cfd);
+          }
+        }
+        folder.children = children;
         return folder;
       }
       return null;
@@ -40,12 +67,14 @@ function createMockVault() {
       files.set(path, data);
       const file = new TFile();
       file.path = path;
+      file.name = path.split("/").pop() ?? "";
       return file;
     },
     async createFolder(path: string) {
       folders.add(path);
       const folder = new TFolder();
       folder.path = path;
+      folder.name = path.split("/").pop() ?? "";
       return folder;
     },
     async cachedRead(file: TFile) {
@@ -57,11 +86,46 @@ function createMockVault() {
       files.set(file.path, updated);
       return updated;
     },
+    async rename(file: TFile, newPath: string) {
+      const data = files.get(file.path);
+      if (data !== undefined) {
+        files.delete(file.path);
+        files.set(newPath, data);
+      }
+      file.path = newPath;
+      file.name = newPath.split("/").pop() ?? "";
+      const parentPath = newPath.includes("/") ? newPath.slice(0, newPath.lastIndexOf("/")) : "";
+      if (parentPath) {
+        const parent = new TFolder();
+        parent.path = parentPath;
+        parent.name = parentPath.split("/").pop() ?? "";
+        file.parent = parent;
+      } else {
+        file.parent = null;
+      }
+    },
+    async delete(abstractFile: any) {
+      files.delete(abstractFile.path);
+      folders.delete(abstractFile.path);
+    },
+    async trash(abstractFile: any, _system: boolean) {
+      files.delete(abstractFile.path);
+      folders.delete(abstractFile.path);
+    },
   };
 }
 
-function createSyncHost(settings: Partial<BookmarkSettings> = {}): { host: SyncHost; vault: ReturnType<typeof createMockVault> } {
+function createSyncHost(settings: Partial<BookmarkSettings> = {}) {
   const vault = createMockVault();
+  const fileManager = {
+    async renameFile(file: TFile, newPath: string) {
+      await vault.rename(file, newPath);
+    },
+    async trashFile(folder: any) {
+      await vault.delete(folder);
+    },
+  };
+  const app = { vault, fileManager };
   const index: BookmarkIndex = {};
   const mergedSettings: BookmarkSettings = {
     ...DEFAULT_SETTINGS,
@@ -75,17 +139,17 @@ function createSyncHost(settings: Partial<BookmarkSettings> = {}): { host: SyncH
     requestIndexSave: () => {},
   };
 
-  return { host, vault };
+  return { host, vault, app };
 }
 
 test("SyncEngine creates notes and updates index for new bookmarks", async () => {
-  const { host, vault } = createSyncHost({
+  const { host, vault, app } = createSyncHost({
     targetFolder: "Bookmarks",
     folderStructure: "folders",
   });
 
   const engine = new SyncEngine(
-    { vault } as any,
+    app as any,
     host,
     (date) => date.toISOString().slice(0, 10),
   );
@@ -115,13 +179,13 @@ test("SyncEngine creates notes and updates index for new bookmarks", async () =>
 });
 
 test("SyncEngine respects folderStructure: 'flat'", async () => {
-  const { host, vault } = createSyncHost({
+  const { host, vault, app } = createSyncHost({
     targetFolder: "Bookmarks",
     folderStructure: "flat",
   });
 
   const engine = new SyncEngine(
-    { vault } as any,
+    app as any,
     host,
     (date) => date.toISOString().slice(0, 10),
   );
@@ -144,12 +208,12 @@ test("SyncEngine respects folderStructure: 'flat'", async () => {
 });
 
 test("SyncEngine overwrites existing bookmarks on subsequent sync (1-way sync)", async () => {
-  const { host, vault } = createSyncHost({
+  const { host, vault, app } = createSyncHost({
     targetFolder: "Bookmarks",
   });
 
   const engine = new SyncEngine(
-    { vault } as any,
+    app as any,
     host,
     (date) => date.toISOString().slice(0, 10),
   );
@@ -182,8 +246,8 @@ test("SyncEngine overwrites existing bookmarks on subsequent sync (1-way sync)",
 });
 
 test("SyncEngine handleRename updates index for files and folders", () => {
-  const { host, vault } = createSyncHost();
-  const engine = new SyncEngine({ vault } as any, host, () => "");
+  const { host, app } = createSyncHost();
+  const engine = new SyncEngine(app as any, host, () => "");
 
   host.index["https://a.com"] = "Bookmarks/Dev/Tool.md";
   host.index["https://b.com"] = "Bookmarks/Design/Figma.md";
@@ -196,3 +260,162 @@ test("SyncEngine handleRename updates index for files and folders", () => {
   engine.handleRename("Bookmarks/Design", "Bookmarks/UX", true);
   assert.equal(host.index["https://b.com"], "Bookmarks/UX/Figma.md");
 });
+
+test("SyncEngine moves existing notes when folderStructure changes from folders to flat", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "folders",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  const entry: BookmarkEntry = {
+    sourceId: "1",
+    title: "GitHub",
+    url: "https://github.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Dev"],
+    browser: "chrome",
+  };
+
+  // Sync 1: creates note in Bookmarks/Dev/GitHub.md
+  const res1 = await (engine as any).apply([entry]);
+  assert.equal(res1.created, 1);
+  assert.ok(vault.files.has("Bookmarks/Dev/GitHub.md"));
+  assert.equal(host.index["https://github.com"], "Bookmarks/Dev/GitHub.md");
+
+  // User changes setting to "flat"
+  host.settings.folderStructure = "flat";
+
+  // Sync 2: moves note to Bookmarks/GitHub.md and removes empty Bookmarks/Dev folder
+  const res2 = await (engine as any).apply([entry]);
+  assert.equal(res2.moved, 1);
+  assert.equal(res2.created, 0);
+  assert.ok(vault.files.has("Bookmarks/GitHub.md"));
+  assert.ok(!vault.files.has("Bookmarks/Dev/GitHub.md"));
+  assert.ok(!vault.folders.has("Bookmarks/Dev"));
+  assert.equal(host.index["https://github.com"], "Bookmarks/GitHub.md");
+});
+
+test("SyncEngine moves existing notes when folderStructure changes from flat to folders", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "flat",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  const entry: BookmarkEntry = {
+    sourceId: "2",
+    title: "Docs",
+    url: "https://docs.example.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["Work", "Projects"],
+    browser: "chrome",
+  };
+
+  // Sync 1: creates note in flat Bookmarks/Docs.md
+  await (engine as any).apply([entry]);
+  assert.ok(vault.files.has("Bookmarks/Docs.md"));
+
+  // User changes setting to "folders"
+  host.settings.folderStructure = "folders";
+
+  // Sync 2: moves note to Bookmarks/Work/Projects/Docs.md
+  const res = await (engine as any).apply([entry]);
+  assert.equal(res.moved, 1);
+  assert.ok(vault.files.has("Bookmarks/Work/Projects/Docs.md"));
+  assert.ok(!vault.files.has("Bookmarks/Docs.md"));
+  assert.equal(host.index["https://docs.example.com"], "Bookmarks/Work/Projects/Docs.md");
+});
+
+test("SyncEngine moves notes and cleans empty subfolders when browser folderPath changes", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "folders",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  const entry: BookmarkEntry = {
+    sourceId: "3",
+    title: "Linear",
+    url: "https://linear.app",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["OldCategory"],
+    browser: "chrome",
+  };
+
+  await (engine as any).apply([entry]);
+  assert.ok(vault.files.has("Bookmarks/OldCategory/Linear.md"));
+
+  // Bookmark moved to NewCategory in browser
+  const updatedEntry: BookmarkEntry = {
+    ...entry,
+    folderPath: ["NewCategory"],
+  };
+
+  const res = await (engine as any).apply([updatedEntry]);
+  assert.equal(res.moved, 1);
+  assert.ok(vault.files.has("Bookmarks/NewCategory/Linear.md"));
+  assert.ok(!vault.files.has("Bookmarks/OldCategory/Linear.md"));
+  assert.ok(!vault.folders.has("Bookmarks/OldCategory"));
+});
+
+test("SyncEngine handles collision when moving note into folder where name is taken", async () => {
+  const { host, vault, app } = createSyncHost({
+    targetFolder: "Bookmarks",
+    folderStructure: "folders",
+  });
+
+  const engine = new SyncEngine(
+    app as any,
+    host,
+    (date) => date.toISOString().slice(0, 10),
+  );
+
+  // Two bookmarks with the same title in different browser folders
+  const entryA: BookmarkEntry = {
+    sourceId: "4",
+    title: "Tool",
+    url: "https://tool-a.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["FolderA"],
+    browser: "chrome",
+  };
+  const entryB: BookmarkEntry = {
+    sourceId: "5",
+    title: "Tool",
+    url: "https://tool-b.com",
+    dateAdded: new Date("2024-01-01"),
+    folderPath: ["FolderB"],
+    browser: "chrome",
+  };
+
+  await (engine as any).apply([entryA, entryB]);
+  assert.ok(vault.files.has("Bookmarks/FolderA/Tool.md"));
+  assert.ok(vault.files.has("Bookmarks/FolderB/Tool.md"));
+
+  // Change to flat: both notes now target Bookmarks/
+  host.settings.folderStructure = "flat";
+  const res = await (engine as any).apply([entryA, entryB]);
+  assert.equal(res.moved, 2);
+
+  // One gets Tool.md, the other gets disambiguated with hash suffix
+  const files = Array.from(vault.files.keys());
+  assert.ok(files.some((f) => f === "Bookmarks/Tool.md"));
+  assert.ok(files.some((f) => f.startsWith("Bookmarks/Tool (") && f.endsWith(").md")));
+});
+

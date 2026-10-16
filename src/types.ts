@@ -34,6 +34,7 @@ export interface SyncResult {
   total: number;
   created: number;
   updated: number;
+  moved: number;
   unchanged: number;
   /** Reserved for future use (always 0 since sync always overwrites existing notes). */
   skipped: number;
