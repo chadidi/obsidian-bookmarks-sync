@@ -139,7 +139,19 @@ export class BookmarkSettingTab extends PluginSettingTab {
       new Setting(containerEl)
         .setName('sqlite3 executable')
         .setDesc(
-          "Only used when the path above points to places.sqlite. Leave as 'sqlite3' if it is on your PATH.",
+          createFragment((frag) => {
+            frag.appendText(
+              "Only used when the path above points to places.sqlite. Leave as 'sqlite3' if it is on your PATH. " +
+                'Not installed? Download the ',
+            );
+            frag.createEl('code', { text: 'sqlite-tools-*.zip' });
+            frag.appendText(' file from ');
+            frag.createEl('a', {
+              href: 'https://www.sqlite.org/download.html',
+              text: 'sqlite.org/download.html',
+            });
+            frag.appendText(' — it contains the sqlite3 binary.');
+          }),
         )
         .addText((text) =>
           text
