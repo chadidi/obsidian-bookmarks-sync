@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expandPath, defaultBrowserPath, resolveSourcePath } from '../src/paths';
+import {
+  chromeBookmarkFile,
+  expandPath,
+  defaultBrowserPath,
+  resolveSourcePath,
+} from '../src/paths';
 import { BookmarkSourceError } from '../src/errors';
 
 test('expandPath expands tilde and environment variables', () => {
@@ -64,5 +70,23 @@ test('resolveSourcePath throws BookmarkSourceError on unsupported platform witho
         );
       },
     );
+  }
+});
+
+test('chromeBookmarkFile prefers Bookmarks and falls back to AccountBookmarks', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bb-chrome-'));
+  try {
+    // Neither file exists: keep the canonical local path.
+    assert.equal(chromeBookmarkFile(dir), path.join(dir, 'Bookmarks'));
+
+    // Signed-in Chrome with only synced bookmarks.
+    fs.writeFileSync(path.join(dir, 'AccountBookmarks'), '{}');
+    assert.equal(chromeBookmarkFile(dir), path.join(dir, 'AccountBookmarks'));
+
+    // A local Bookmarks file takes precedence once present.
+    fs.writeFileSync(path.join(dir, 'Bookmarks'), '{}');
+    assert.equal(chromeBookmarkFile(dir), path.join(dir, 'Bookmarks'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import {
   App,
   type DropdownComponent,
@@ -8,19 +7,31 @@ import {
   debounce,
 } from 'obsidian';
 import type BookmarksSyncPlugin from './main';
-import { defaultBrowserPath, resolveSourcePath } from './paths';
+import { checkSourceAccess, defaultBrowserPath } from './paths';
 import { FULL_TEMPLATE, SIMPLE_TEMPLATE } from './settings';
 import { findUnknownPlaceholders } from './template';
 import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from './types';
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
-    'The Chrome/Chromium "Bookmarks" JSON file. For other profiles or Chromium browsers (Edge, Brave...) enter their Bookmarks file here.',
+    'The Chrome/Chromium "Bookmarks" JSON file. When you are signed in, Chrome may keep your bookmarks ' +
+    'in "AccountBookmarks" instead; the plugin detects both. For other profiles or Chromium browsers ' +
+    '(Edge, Brave...) enter their Bookmarks file here.',
   firefox:
     'Either places.sqlite (live data; needs the sqlite3 command-line tool) or a bookmarkbackups *.jsonlz4 file / folder ' +
     "(no extra software, but only as fresh as Firefox's last daily backup).",
   safari:
     "Safari's binary Bookmarks.plist (macOS only). Obsidian needs Full Disk Access in System Settings → Privacy & Security.",
+};
+
+/** What the user can do to let the plugin read the select browser's bookmarks. */
+const ACCESS_HINT: Record<BrowserType, string> = {
+  chrome:
+    'Open Google Chrome and sign in so it saves your bookmarks to disk, then reopen this tab.',
+  firefox:
+    'Open Mozilla Firefox at least once (or let it create a daily bookmark backup), then reopen this tab.',
+  safari:
+    'Grant Obsidian Full Disk Access in System Settings → Privacy & Security, then reopen this tab.',
 };
 
 export class BookmarkSettingTab extends PluginSettingTab {
@@ -135,6 +146,19 @@ export class BookmarkSettingTab extends PluginSettingTab {
               save();
             }),
         );
+    }
+
+    // Everything below depends on actually being able to read the browser's bookmarks,
+    // so keep it hidden until that access is granted.
+    const access = checkSourceAccess(browser, settings.paths[browser]);
+    if (!access.accessible) {
+      containerEl
+        .createDiv({ cls: 'setting-item-description bb-warning bb-access-hint' })
+        .setText(
+          `Can't read the ${BROWSER_LABELS[browser]} bookmarks yet. ${ACCESS_HINT[browser]} ` +
+            'The rest of the settings will appear once access is granted.',
+        );
+      return;
     }
 
     /* ---------------- Output ---------------- */
@@ -327,20 +351,21 @@ export class BookmarkSettingTab extends PluginSettingTab {
       );
   }
 
-  /** Shows what the field currently resolves to and whether that file exists. */
+  /** Shows what the field currently resolves to and whether it can be read. */
   private pathDescription(browser: BrowserType, configured: string): DocumentFragment {
     return createFragment((frag) => {
       frag.appendText(PATH_HELP[browser]);
       frag.createEl('br');
-      try {
-        const resolved = resolveSourcePath(browser, configured);
-        const exists = fs.existsSync(resolved);
-        frag.appendText(configured.trim() ? 'Using: ' : 'Detected default: ');
-        frag.createEl('code', { text: resolved });
-        frag.appendText(exists ? ' (found)' : ' (not found)');
-      } catch (err) {
-        frag.appendText(err instanceof Error ? err.message : String(err));
+      const access = checkSourceAccess(browser, configured);
+      if (!access.resolved) {
+        frag.appendText(access.error ?? 'No bookmarks location is known for this platform.');
+        return;
       }
+      frag.appendText(configured.trim() ? 'Using: ' : 'Detected default: ');
+      frag.createEl('code', { text: access.resolved });
+      if (!access.exists) frag.appendText(' (not found)');
+      else if (!access.accessible) frag.appendText(' (no permission)');
+      else frag.appendText(' (found)');
     });
   }
 }

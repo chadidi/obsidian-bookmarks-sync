@@ -25,6 +25,14 @@
   color: var(--text-warning);
 }
 
+.bb-access-hint {
+  margin-top: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-left: 3px solid var(--text-warning);
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-s);
+}
+
 .bb-settings-nav-icon {
   margin-right: 6px;
 }

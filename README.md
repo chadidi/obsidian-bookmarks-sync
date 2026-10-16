@@ -58,7 +58,7 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 
 | Browser | Default file location | Notes |
 |---|---|---|
-| **Chrome / Chromium** | `…/Chrome/Default/Bookmarks` (macOS / Windows / Linux) | JSON file. Custom profiles or Chromium browsers (e.g. Brave, Edge, Arc) can be used by providing their custom path in settings. |
+| **Chrome / Chromium** | `…/Chrome/Default/Bookmarks`, falling back to `…/Chrome/Default/AccountBookmarks` (macOS / Windows / Linux) | JSON file. When you are signed in, Chrome may store your bookmarks in `AccountBookmarks` instead; the plugin detects both. Custom profiles or Chromium browsers (e.g. Brave, Edge, Arc) can be used by providing their custom path in settings. |
 | **Safari** | `~/Library/Safari/Bookmarks.plist` (macOS) | Binary plist, parsed directly in-process. Requires granting Obsidian **Full Disk Access** in macOS **System Settings** → **Privacy & Security**. Reading List items are excluded. Safari stores no creation dates, so `{{date}}` uses the sync date. |
 | **Firefox** | Auto-detected `places.sqlite` or `bookmarkbackups/*.jsonlz4` | Reads live bookmarks from `places.sqlite` using the system `sqlite3` CLI tool on a temporary database snapshot. Alternatively, point to a `bookmarkbackups/*.jsonlz4` file or directory for native decompression without `sqlite3`. |
 
