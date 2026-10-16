@@ -86,3 +86,19 @@ test('normalizeSettings defaults allowVaultRootTarget to false and coerces stray
     false,
   );
 });
+
+test('normalizeSettings forces allowVaultRootTarget off when the target is the vault root', () => {
+  assert.equal(
+    normalizeSettings({ targetFolder: '', allowVaultRootTarget: true }).allowVaultRootTarget,
+    false,
+  );
+  assert.equal(
+    normalizeSettings({ targetFolder: '/', allowVaultRootTarget: true }).allowVaultRootTarget,
+    false,
+  );
+  assert.equal(
+    normalizeSettings({ targetFolder: 'Bookmarks', allowVaultRootTarget: true })
+      .allowVaultRootTarget,
+    true,
+  );
+});

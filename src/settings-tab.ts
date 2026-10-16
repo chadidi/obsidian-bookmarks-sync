@@ -4,6 +4,7 @@ import {
   PluginSettingTab,
   Setting,
   type TextAreaComponent,
+  type ToggleComponent,
   debounce,
 } from 'obsidian';
 import type BookmarksSyncPlugin from './main';
@@ -194,17 +195,19 @@ export class BookmarkSettingTab extends PluginSettingTab {
         'Existing notes there can be overwritten or deleted. Set a folder, or confirm below.',
     );
 
+    let rootToggle: ToggleComponent | null = null;
     new Setting(targetGuardEl)
       .setName('Allow syncing into the vault root')
       .setDesc(
         'Required while the target folder is empty. Sync stays blocked until you enable this.',
       )
-      .addToggle((toggle) =>
+      .addToggle((toggle) => {
+        rootToggle = toggle;
         toggle.setValue(settings.allowVaultRootTarget).onChange(async (value) => {
           settings.allowVaultRootTarget = value;
           await this.plugin.saveSettings();
-        }),
-      );
+        });
+      });
 
     const refreshTargetGuard = () => {
       const isRoot = isVaultRootTarget(settings.targetFolder);
@@ -214,6 +217,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
         settings.allowVaultRootTarget = false;
         void this.plugin.saveSettings();
       }
+      rootToggle?.setValue(settings.allowVaultRootTarget);
       targetGuardEl.toggle(isRoot);
     };
     refreshTargetGuard();

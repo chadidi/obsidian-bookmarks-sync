@@ -103,6 +103,9 @@ export function normalizeSettings(
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
   if (typeof merged.targetFolder !== 'string') merged.targetFolder = DEFAULT_SETTINGS.targetFolder;
   merged.allowVaultRootTarget = raw?.allowVaultRootTarget === true;
+  // Syncing into the vault root always starts unconfirmed, so the user must acknowledge the risk
+  // again whenever the target folder is the root.
+  if (isVaultRootTarget(merged.targetFolder)) merged.allowVaultRootTarget = false;
   if (typeof merged.rootFolder !== 'string') merged.rootFolder = '';
   const FOLDER_STRUCTURES: FolderStructure[] = ['folders', 'flat'];
   if (!FOLDER_STRUCTURES.includes(merged.folderStructure)) merged.folderStructure = 'folders';
