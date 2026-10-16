@@ -156,7 +156,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
               href: 'https://www.sqlite.org/download.html',
               text: 'sqlite.org/download.html',
             });
-            frag.appendText(' — it contains the sqlite3 binary.');
+            frag.appendText('; it contains the sqlite3 binary.');
           }),
         )
         .addText((text) =>
@@ -453,7 +453,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
           ? `Using the file you selected this session: ${pick.fileName}. macOS keeps this access ` +
               'until Obsidian is closed.'
           : 'macOS protects ~/Library/Safari/, so the path above may not be readable on its own. ' +
-              'Select Bookmarks.plist below to grant read access for this session — Full Disk ' +
+              'Select Bookmarks.plist below to grant read access for this session. Full Disk ' +
               'Access is not required.',
       )
       .addButton((btn) =>

@@ -32,7 +32,7 @@ export class SafariPickerModal extends Modal {
     contentEl.createEl('p', {
       text:
         'macOS protects the Safari bookmarks folder. Choosing the file yourself grants this plugin ' +
-        'read access to just that file for this session — Full Disk Access is not required.',
+        'read access to just that file for this session. Full Disk Access is not required.',
     });
 
     const steps = contentEl.createEl('ol', { cls: 'bb-picker-steps' });
