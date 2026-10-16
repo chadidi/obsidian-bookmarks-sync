@@ -6,7 +6,7 @@ Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into you
 
 ## Features
 
-- **Multi-browser support**: Import bookmarks directly from Google Chrome, Chromium (and other Chromium-based browsers like Brave, Edge), Safari (macOS), or Mozilla Firefox.
+- **Multi-browser support**: Import bookmarks directly from Google Chrome, Chromium (Brave, Edge, etc.), Safari (macOS), or Mozilla Firefox.
 - **Customizable templates**: Render bookmarks into notes using presets (Simple or Full) or craft your own template with placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
 - **Frontmatter ready**: Use filters like `{{title|yaml}}` to safely format text for YAML frontmatter.
 - **Hierarchy preservation**: Mirror your browser folder tree into vault subfolders, or save all bookmarks into a flat folder.
