@@ -242,26 +242,51 @@ export class BookmarkSettingTab extends PluginSettingTab {
     /* ---------------- Automation ---------------- */
     new Setting(containerEl).setName('Automation').setHeading();
 
+    let intervalErrorEl: HTMLElement | null = null;
+
     new Setting(containerEl)
       .setName('Sync interval (minutes)')
       .setDesc(
         'How often to sync in the background. Use 0 to disable. Automatic syncs only start after you have ' +
-          'run one manual sync successfully, so nothing is imported by surprise.',
+          'run one manual sync successfully, so nothing is imported by surprise. ' +
+          'We recommend 10 minutes or more.',
       )
       .addText((text) => {
         text.inputEl.type = 'number';
         text.inputEl.min = '0';
+        text.inputEl.step = '1';
+
+        // Stack the error message directly under the input instead of after the whole row.
+        const control = text.inputEl.parentElement;
+        if (control) {
+          const wrap = control.createDiv({ cls: 'bb-interval-input' });
+          wrap.appendChild(text.inputEl);
+          intervalErrorEl = wrap.createDiv({ cls: 'setting-item-description bb-error' });
+        }
+
         text
           .setPlaceholder('0')
           .setValue(String(settings.intervalMinutes))
           .onChange((value) => {
             const minutes = Number(value);
-            if (!Number.isFinite(minutes) || minutes < 0) return;
-            settings.intervalMinutes = Math.min(Math.floor(minutes), 10080);
+            // Accept only unsigned integers; show a red error and keep the previous value otherwise.
+            const invalid = value.trim() !== '' && (!Number.isInteger(minutes) || minutes < 0);
+            if (invalid) {
+              refreshIntervalError(true);
+              return;
+            }
+            settings.intervalMinutes = Math.min(minutes, 10080);
             save();
             reschedule();
+            refreshIntervalError(false);
           });
       });
+
+    const refreshIntervalError = (invalid: boolean) => {
+      if (!intervalErrorEl) return;
+      intervalErrorEl.setText(invalid ? 'Enter a whole number of minutes (0 or more).' : '');
+      intervalErrorEl.toggle(invalid);
+    };
 
     new Setting(containerEl)
       .setName('Sync on startup')
