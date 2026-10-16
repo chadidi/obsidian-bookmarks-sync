@@ -92,7 +92,9 @@ export class SyncEngine {
     this.running = true;
     const started = Date.now();
     try {
-      const { entries } = await readBookmarks(this.host.settings, this.host.log);
+      const { entries } = await readBookmarks(this.host.settings, this.host.log, {
+        safariOverride: this.host.getSafariPickedBuffer?.() ?? null,
+      });
       const filtered = filterByRootFolder(entries, this.host.settings.rootFolder, this.host.log);
       // Pass the unfiltered entries too, so a bookmark that merely falls outside the
       // configured rootFolder is not mistaken for one that was deleted in the browser.

@@ -4,7 +4,14 @@ import { Logger } from './logger';
 import { normalizeSettings } from './settings';
 import { BookmarkSettingTab } from './settings-tab';
 import { SyncEngine } from './sync';
-import type { BookmarkSettings, PluginData, SyncHost, SyncResult, SyncTrigger } from './types';
+import type {
+  BookmarkSettings,
+  PluginData,
+  SafariPick,
+  SyncHost,
+  SyncResult,
+  SyncTrigger,
+} from './types';
 
 // Obsidian re-exports moment.js, but its typings are not directly callable under esModuleInterop.
 const formatWithMoment = (date: Date, format: string): string =>
@@ -19,6 +26,11 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
   private intervalId: number | null = null;
   private lastAutomaticError = '';
   private readonly saveIndexSoon = debounce(() => void this.persist(), 1000, true);
+  /**
+   * Safari Bookmarks.plist the user picked through the native dialog. macOS only grants access for
+   * the current session, so this lives in memory and is intentionally never persisted.
+   */
+  private safariPick: SafariPick | null = null;
 
   async onload(): Promise<void> {
     await this.loadPluginData();
@@ -172,5 +184,18 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
 
   requestIndexSave(): void {
     this.saveIndexSoon();
+  }
+
+  /** The in-memory Safari pick for this session, if the user has chosen a Bookmarks.plist. */
+  getSafariPick(): SafariPick | null {
+    return this.safariPick;
+  }
+
+  setSafariPick(pick: SafariPick | null): void {
+    this.safariPick = pick;
+  }
+
+  getSafariPickedBuffer(): Buffer | null {
+    return this.safariPick?.buffer ?? null;
   }
 }

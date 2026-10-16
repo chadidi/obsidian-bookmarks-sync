@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { readSafariBookmarks } from '../src/sources/safari';
+import { parseSafariBookmarks, readSafariBookmarks } from '../src/sources/safari';
+import { readBookmarks } from '../src/sources';
 import { BookmarkSourceError } from '../src/errors';
 import { Logger } from '../src/logger';
+import { DEFAULT_SETTINGS } from '../src/settings';
 
 const silentLogger = new Logger(() => false);
 
@@ -59,4 +61,40 @@ test('readSafariBookmarks throws BookmarkSourceError on corrupted plist', async 
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('parseSafariBookmarks parses picked bytes without a path', () => {
+  const buffer = Buffer.from(SAMPLE_SAFARI_BPLIST_B64, 'base64');
+  const bookmarks = parseSafariBookmarks(buffer, silentLogger, 'Bookmarks.plist');
+
+  assert.equal(bookmarks.length, 2);
+  assert.equal(bookmarks[0]?.title, 'Apple');
+  assert.deepEqual(bookmarks[0]?.folderPath, ['Favorites']);
+  assert.equal(bookmarks[1]?.title, 'WebKit');
+});
+
+test('parseSafariBookmarks reports the picked file name on parse failure', () => {
+  assert.throws(
+    () =>
+      parseSafariBookmarks(
+        Buffer.from('bplist00NotValidDataHere'),
+        silentLogger,
+        'Bookmarks.plist',
+      ),
+    (err: unknown) =>
+      err instanceof BookmarkSourceError && /Bookmarks\.plist/.test((err as Error).message),
+  );
+});
+
+test('readBookmarks prefers the session-only Safari pick over the file path', async () => {
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    browser: 'safari' as const,
+    paths: { ...DEFAULT_SETTINGS.paths, safari: '/does/not/exist/Bookmarks.plist' },
+  };
+  const buffer = Buffer.from(SAMPLE_SAFARI_BPLIST_B64, 'base64');
+
+  const { entries } = await readBookmarks(settings, silentLogger, { safariOverride: buffer });
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0]?.title, 'Apple');
 });

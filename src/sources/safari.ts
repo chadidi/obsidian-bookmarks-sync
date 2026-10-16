@@ -112,13 +112,24 @@ function walk(node: PlistDict, trail: string[], out: BookmarkEntry[]): void {
 
 export async function readSafariBookmarks(filePath: string, log: Logger): Promise<BookmarkEntry[]> {
   const buffer = await readFileOrThrow(filePath, { permission: FULL_DISK_ACCESS_HINT });
+  return parseSafariBookmarks(buffer, log, filePath);
+}
 
+/**
+ * Parses Safari bookmark bytes into entries. Kept separate from the file read so bytes obtained
+ * through the native file picker (a session-only, user-granted read) can be parsed the same way.
+ */
+export function parseSafariBookmarks(
+  buffer: Buffer,
+  log: Logger,
+  label = 'the selected file',
+): BookmarkEntry[] {
   let root: PlistDict;
   try {
     root = parsePlist(buffer);
   } catch (err) {
     throw new BookmarkSourceError(
-      `Could not parse ${filePath} as a Safari Bookmarks.plist: ${errorMessage(err)}`,
+      `Could not parse ${label} as a Safari Bookmarks.plist: ${errorMessage(err)}`,
       err,
     );
   }

@@ -11,6 +11,7 @@ import { checkSourceAccess, defaultBrowserPath } from './paths';
 import { FULL_TEMPLATE, SIMPLE_TEMPLATE } from './settings';
 import { findUnknownPlaceholders } from './template';
 import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from './types';
+import { SafariPickerModal } from './ui/safari-picker-modal';
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
@@ -21,7 +22,8 @@ const PATH_HELP: Record<BrowserType, string> = {
     'Either places.sqlite (live data; needs the sqlite3 command-line tool) or a bookmarkbackups *.jsonlz4 file / folder ' +
     "(no extra software, but only as fresh as Firefox's last daily backup).",
   safari:
-    "Safari's binary Bookmarks.plist (macOS only). Obsidian needs Full Disk Access in System Settings → Privacy & Security.",
+    "Safari's binary Bookmarks.plist (macOS only). Select it with the button below to grant access " +
+    'without Full Disk Access, or point this field at a copy of the file.',
 };
 
 /** What the user can do to let the plugin read the select browser's bookmarks. */
@@ -31,7 +33,8 @@ const ACCESS_HINT: Record<BrowserType, string> = {
   firefox:
     'Open Mozilla Firefox at least once (or let it create a daily bookmark backup), then reopen this tab.',
   safari:
-    'Grant Obsidian Full Disk Access in System Settings → Privacy & Security, then reopen this tab.',
+    'Select ~/Library/Safari/Bookmarks.plist with the button above to grant access, or grant Obsidian ' +
+    'Full Disk Access in System Settings → Privacy & Security, then reopen this tab.',
 };
 
 export class BookmarkSettingTab extends PluginSettingTab {
@@ -148,10 +151,15 @@ export class BookmarkSettingTab extends PluginSettingTab {
         );
     }
 
+    if (browser === 'safari') {
+      this.renderSafariPicker(containerEl);
+    }
+
     // Everything below depends on actually being able to read the browser's bookmarks,
     // so keep it hidden until that access is granted.
     const access = checkSourceAccess(browser, settings.paths[browser]);
-    if (!access.accessible) {
+    const hasSafariPick = browser === 'safari' && this.plugin.getSafariPick() !== null;
+    if (!access.accessible && !hasSafariPick) {
       containerEl
         .createDiv({ cls: 'setting-item-description bb-warning bb-access-hint' })
         .setText(
@@ -173,9 +181,27 @@ export class BookmarkSettingTab extends PluginSettingTab {
           .setValue(settings.targetFolder)
           .onChange((value) => {
             settings.targetFolder = value.trim();
+            refreshTargetWarning();
             save();
           }),
       );
+
+    const targetWarningEl = containerEl.createDiv({
+      cls: 'setting-item-description bb-warning bb-access-hint',
+    });
+    const refreshTargetWarning = () => {
+      const trimmed = settings.targetFolder.trim();
+      const isRoot = trimmed === '' || trimmed === '/';
+      targetWarningEl.setText(
+        isRoot
+          ? 'Warning: an empty target folder writes the bookmark notes into the root of your vault. ' +
+              'Existing notes there that share a bookmark\u2019s name can be overwritten, and notes are ' +
+              'deleted when their bookmarks disappear. Set a dedicated folder instead.'
+          : '',
+      );
+      targetWarningEl.toggle(isRoot);
+    };
+    refreshTargetWarning();
 
     new Setting(containerEl)
       .setName('Folder structure')
@@ -349,6 +375,48 @@ export class BookmarkSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }),
       );
+  }
+
+  /**
+   * Lets the user hand the plugin a Safari Bookmarks.plist through the native file picker.
+   * Picking the file grants macOS read access to just that file for this session, so the field
+   * above can stay empty and Full Disk Access is not required.
+   */
+  private renderSafariPicker(containerEl: HTMLElement): void {
+    const pick = this.plugin.getSafariPick();
+    const setting = new Setting(containerEl)
+      .setName('Safari bookmarks file')
+      .setDesc(
+        pick
+          ? `Using the file you selected this session: ${pick.fileName}. macOS keeps this access ` +
+              'until Obsidian is closed.'
+          : 'macOS protects ~/Library/Safari/, so the path above may not be readable on its own. ' +
+              'Select Bookmarks.plist below to grant read access for this session — Full Disk ' +
+              'Access is not required.',
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText(pick ? 'Choose a different file' : 'Choose Bookmarks.plist')
+          .setCta()
+          .onClick(() => {
+            new SafariPickerModal(this.app, this.plugin.log, (picked) => {
+              this.plugin.setSafariPick(picked);
+              this.display();
+            }).open();
+          }),
+      );
+
+    if (pick) {
+      setting.addExtraButton((btn) =>
+        btn
+          .setIcon('x')
+          .setTooltip('Forget the selected file')
+          .onClick(() => {
+            this.plugin.setSafariPick(null);
+            this.display();
+          }),
+      );
+    }
   }
 
   /** Shows what the field currently resolves to and whether it can be read. */

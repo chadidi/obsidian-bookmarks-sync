@@ -48,6 +48,18 @@ export interface SyncResult {
 
 export type TemplatePreset = 'simple' | 'full' | 'custom';
 
+/**
+ * A Safari Bookmarks.plist the user selected through the native file dialog. macOS grants read
+ * access to just that file for the current session, so the bytes live in memory only.
+ */
+export interface SafariPick {
+  buffer: Buffer;
+  /** Absolute path reported by the picker, or "" when the platform does not expose one. */
+  path: string;
+  /** Base file name, used for display in the settings UI. */
+  fileName: string;
+}
+
 export interface BookmarkSettings {
   browser: BrowserType;
   /** Per-browser source path. Empty string = use the auto-detected default. */
@@ -91,4 +103,9 @@ export interface SyncHost {
   index: Record<string, string>;
   log: Logger;
   requestIndexSave(): void;
+  /**
+   * Session-only bytes of a Safari Bookmarks.plist the user picked via the native file dialog.
+   * Null when nothing has been picked this session (macOS clears the grant when Obsidian quits).
+   */
+  getSafariPickedBuffer?(): Buffer | null;
 }
