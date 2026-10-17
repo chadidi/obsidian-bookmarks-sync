@@ -1,41 +1,41 @@
 {
-	"name": "obsidian-bookmarks-sync",
-	"version": "1.1.1",
-	"description": "Import Safari, Chrome or Firefox bookmarks into Obsidian as individual Markdown notes.",
-	"main": "main.js",
-	"type": "module",
-	"scripts": {
-		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint .",
-		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"test": "node --import tsx --import ./tests/mocks/register.js --test 'tests/**/*.test.ts'"
-	},
-	"author": "Abdellah Chadidi",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/chadidi/obsidian-bookmarks-sync.git"
-	},
-	"devDependencies": {
-		"@eslint/js": "^9.39.4",
-		"@types/node": "^22.15.17",
-		"esbuild": "0.25.5",
-		"eslint": "^9.39.4",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-obsidianmd": "^0.4.0",
-		"globals": "^17.6.0",
-		"jiti": "^2.6.1",
-		"obsidian": "latest",
-		"prettier": "^3.9.10",
-		"tslib": "^2.6.3",
-		"tsx": "^4.23.15",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.59.1"
-	},
-	"dependencies": {
-		"bplist-parser": "^0.3.2"
-	}
+  "name": "obsidian-bookmarks-sync",
+  "version": "1.1.2",
+  "description": "Import Safari, Chrome or Firefox bookmarks into Obsidian as individual Markdown notes.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --import tsx --import ./tests/mocks/register.js --test 'tests/**/*.test.ts'"
+  },
+  "author": "Abdellah Chadidi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chadidi/obsidian-bookmarks-sync.git"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^22.15.17",
+    "esbuild": "0.25.5",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-obsidianmd": "^0.4.0",
+    "globals": "^17.6.0",
+    "jiti": "^2.6.1",
+    "obsidian": "latest",
+    "prettier": "^3.9.10",
+    "tslib": "^2.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.59.1"
+  },
+  "dependencies": {
+    "bplist-parser": "^0.3.2"
+  }
 }
