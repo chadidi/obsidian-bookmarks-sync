@@ -73,6 +73,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 | `{{synced}}` | Date the current sync occurred (e.g. `{{synced:YYYY-MM-DD HH:mm}}`). |
 | `{{folder_path}}` | Full browser folder path separated by `/` (e.g. `Bookmarks Bar/Dev/Obsidian`). |
 | `{{folder}}` | Immediate parent folder name (e.g. `Obsidian`). |
+| `{{folder_links}}` | Folder path as wiki links separated by ` / ` (e.g. `[[Bookmarks Bar]] / [[Dev]] / [[Obsidian]]`). Pass a custom separator after a colon, e.g. `{{folder_links: > }}` gives `[[Bookmarks Bar]] > [[Dev]] > [[Obsidian]]`. |
+| `{{folder_links_yaml}}` | Folder path as a quoted list of wiki links for front matter (e.g. `["[[Bookmarks Bar]]", "[[Dev]]", "[[Obsidian]]"]`). |
 | `{{domain}}` | Clean domain name without `www.` (e.g. `obsidian.md`). |
 | `{{browser}}` | Browser name (e.g. `Google Chrome`, `Chromium`, `Safari`, `Firefox`). |
 

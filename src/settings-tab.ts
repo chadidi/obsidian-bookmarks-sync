@@ -405,6 +405,8 @@ export class BookmarkSettingTab extends PluginSettingTab {
           '{{date}}',
           '{{folder_path}}',
           '{{folder}}',
+          '{{folder_links}}',
+          '{{folder_links_yaml}}',
           '{{domain}}',
           '{{browser}}',
           '{{synced}}',
