@@ -1,15 +1,17 @@
 ---
 title: {{title|yaml}}
+slug: {{title|slug}}
 url: {{url|yaml}}
-folder: {{folder_path|yaml}}
-date: {{date}}
-source: {{browser}}
+date: {{date:DD/MM/YYYY}}
+synced: {{synced:DD/MM/YYYY}}
+source: {{browser|yaml}}
+domain: {{domain|yaml}}
 tags:
-  - bookmark
+  - {{domain|slug}}
+  - {{folder|slug}}
+  - {{folder_path|slug}}
 ---
-
-# {{title}}
 
 {{url}}
 
-**Folder:** {{folder_path}}
+**Folder:** [[{{folder}}]]

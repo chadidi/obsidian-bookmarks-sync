@@ -83,6 +83,7 @@ You can apply pipe filters to any placeholder:
 - `|yaml`: Safely quotes and escapes values for YAML frontmatter (e.g. `title: {{title|yaml}}`).
 - `|lower`: Converts value to lowercase.
 - `|upper`: Converts value to uppercase.
+- `|slug`: Converts value to a URL-friendly slug (e.g. `{{title|slug}}`). Folder paths keep their `/` separators, so `Music Stuff/Sax Songs` becomes `music-stuff/sax-songs`.
 
 ## Sync behavior
 

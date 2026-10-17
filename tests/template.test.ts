@@ -54,6 +54,18 @@ test('renderTemplate supports filters (yaml, lower, upper)', () => {
   );
 });
 
+test('renderTemplate slug filter keeps path separators', () => {
+  const ctx: TemplateContext = { ...baseCtx, title: '  Music Stuff/Sax Songs  ' };
+  const rendered = renderTemplate(
+    `Slug: {{title|slug}}\nPath: {{folder_path|slug}}`,
+    ctx,
+    dummyFormatter,
+    'YYYY-MM-DD',
+  );
+
+  assert.equal(rendered, 'Slug: music-stuff/sax-songs\nPath: bookmarks-bar/tech/javascript');
+});
+
 test('renderTemplate leaves unknown placeholders intact', () => {
   const template = `{{title}} by {{author}} with {{tag|lower}}`;
   const rendered = renderTemplate(template, baseCtx, dummyFormatter, 'YYYY-MM-DD');
