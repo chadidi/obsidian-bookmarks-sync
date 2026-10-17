@@ -21,6 +21,8 @@ export const PLACEHOLDERS = [
   'folder',
   'folder_links',
   'folder_links_yaml',
+  'folder_tags',
+  'folder_hashtags',
   'domain',
   'browser',
   'synced',
@@ -29,6 +31,25 @@ export const PLACEHOLDERS = [
 /** Builds `[[segment]]` wiki links for each folder in the path. */
 function folderLinkSegments(folderPath: string[]): string[] {
   return folderPath.map((segment) => `[[${segment}]]`);
+}
+
+/**
+ * Converts a folder name into a valid Obsidian tag name.
+ *  - whitespace becomes "-"
+ *  - every character Obsidian disallows in tags (e.g. `( ) . , '`) is removed;
+ *    only letters, numbers, `_`, `-` and `/` (nested tags) are kept
+ */
+function folderTag(segment: string): string {
+  return segment
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{N}_\-/]/gu, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** Converts a folder name into an inline Obsidian hashtag. */
+function folderHashtag(segment: string): string {
+  return `#${folderTag(segment)}`;
 }
 
 /**
@@ -114,6 +135,13 @@ export function renderTemplate(
           value = `[${folderLinkSegments(ctx.folderPath)
             .map((link) => JSON.stringify(link))
             .join(', ')}]`;
+          break;
+        case 'folder_tags':
+          // Quoted, comma-separated folder tag names for a YAML flow list (e.g. `tags: [bookmark, {{folder_tags}}]`).
+          value = ctx.folderPath.map((segment) => JSON.stringify(folderTag(segment))).join(', ');
+          break;
+        case 'folder_hashtags':
+          value = ctx.folderPath.map(folderHashtag).join(' ');
           break;
         case 'domain':
           value = domainOf(ctx.url);

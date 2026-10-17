@@ -103,6 +103,41 @@ test('renderTemplate builds a yaml folder links list', () => {
   );
 });
 
+test('renderTemplate builds folder tags and hashtags', () => {
+  const ctx: TemplateContext = {
+    ...baseCtx,
+    folderPath: ['Bookmarks Bar', 'Dev', 'Tools'],
+  };
+
+  assert.equal(
+    renderTemplate('tags: [bookmark, {{folder_tags}}]', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    'tags: [bookmark, "Bookmarks-Bar", "Dev", "Tools"]',
+  );
+  assert.equal(
+    renderTemplate('{{folder_hashtags}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '#Bookmarks-Bar #Dev #Tools',
+  );
+  const emptyCtx: TemplateContext = { ...baseCtx, folderPath: [] };
+  assert.equal(renderTemplate('{{folder_tags}}', emptyCtx, dummyFormatter, 'YYYY-MM-DD'), '');
+  assert.equal(renderTemplate('{{folder_hashtags}}', emptyCtx, dummyFormatter, 'YYYY-MM-DD'), '');
+});
+
+test('renderTemplate strips characters Obsidian disallows in tags', () => {
+  const ctx: TemplateContext = {
+    ...baseCtx,
+    folderPath: ['Reading List (From Safari)', 'C++ & More', 'Nested/Tag'],
+  };
+
+  assert.equal(
+    renderTemplate('{{folder_tags}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '"Reading-List-From-Safari", "C-More", "Nested/Tag"',
+  );
+  assert.equal(
+    renderTemplate('{{folder_hashtags}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '#Reading-List-From-Safari #C-More #Nested/Tag',
+  );
+});
+
 test('renderTemplate leaves unknown placeholders intact', () => {
   const template = `{{title}} by {{author}} with {{tag|lower}}`;
   const rendered = renderTemplate(template, baseCtx, dummyFormatter, 'YYYY-MM-DD');
@@ -130,6 +165,8 @@ url: {{url}}
 folder: {{folder}}
 folder_links: {{folder_links}}
 folder_links_yaml: {{folder_links_yaml}}
+folder_tags: {{folder_tags}}
+folder_hashtags: {{folder_hashtags}}
 path: {{folder_path}}
 date: {{date:YYYY-MM-DD}}
 synced: {{synced}}

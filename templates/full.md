@@ -7,10 +7,7 @@ synced: {{synced:DD/MM/YYYY}}
 source: {{browser|yaml}}
 domain: {{domain|yaml}}
 folders: {{ folder_links_yaml }}
-tags:
-  - {{domain|slug}}
-  - {{folder|slug}}
-  - {{folder_path|slug}}
+tags: [{{domain|slug}},{{folder_tags}}]
 ---
 
 {{url}}
