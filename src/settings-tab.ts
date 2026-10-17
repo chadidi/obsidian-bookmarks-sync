@@ -195,8 +195,8 @@ export class BookmarkSettingTab extends PluginSettingTab {
       return;
     }
 
-    /* ---------------- Output ---------------- */
-    new Setting(containerEl).setName('Output').setHeading();
+    /* ---------------- Destination ---------------- */
+    new Setting(containerEl).setName('Destination').setHeading();
 
     new Setting(containerEl)
       .setName('Target folder')
@@ -341,7 +341,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
       );
 
     /* ---------------- Template ---------------- */
-    new Setting(containerEl).setName('Note template').setHeading();
+    new Setting(containerEl).setName('Template').setHeading();
 
     // A template name can disappear when a bundled template is renamed or removed; fall back so
     // the dropdown never shows a value it does not list.
