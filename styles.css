@@ -25,6 +25,11 @@
   color: var(--text-warning);
 }
 
+/* Template placeholders read in the primary (accent) color. */
+.bb-placeholder {
+  color: var(--text-accent);
+}
+
 /* Shared notice styling so every inline warning block looks identical. */
 .bb-access-hint,
 .bb-target-guard {

@@ -378,10 +378,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Template')
-      .setDesc(
-        'Built-in templates, one markdown file per template in the templates folder of the ' +
-          'plugin source. Adding a markdown file there and rebuilding the plugin adds a template.',
-      )
+      .setDesc('Choose a template for your bookmarks.')
       .addDropdown((dd) => {
         templateDropdown = dd;
         for (const name of TEMPLATE_NAMES) {
@@ -399,29 +396,28 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
     const templateSetting = new Setting(containerEl).setName('Template content').setDesc(
       createFragment((frag) => {
-        frag.appendText(
-          'Editing a built-in template switches the selection to Custom and leaves the ' +
-            'built-in template unchanged. Placeholders: ',
-        );
-        ['{{title}}', '{{url}}', '{{date}}', '{{folder_path}}'].forEach((p, i) => {
-          if (i) frag.appendText(', ');
-          frag.createEl('code', { text: p });
-        });
-        frag.appendText('. Also: ');
-        ['{{folder}}', '{{domain}}', '{{browser}}', '{{synced}}'].forEach((p, i) => {
-          if (i) frag.appendText(', ');
-          frag.createEl('code', { text: p });
+        frag.appendText('Editing a built-in template switches to Custom.');
+        frag.createEl('br');
+        frag.appendText('Placeholders: ');
+        [
+          '{{title}}',
+          '{{url}}',
+          '{{date}}',
+          '{{folder_path}}',
+          '{{folder}}',
+          '{{domain}}',
+          '{{browser}}',
+          '{{synced}}',
+        ].forEach((placeholder, index) => {
+          if (index) frag.appendText(', ');
+          frag.createEl('code', { text: placeholder, cls: 'bb-placeholder' });
         });
         frag.createEl('br');
-        frag.appendText('Date placeholders accept a moment.js format, e.g. ');
-        frag.createEl('code', {
-          text: '{{date:YYYY-MM-DD HH:mm}}',
-        });
-        frag.appendText('. Add ');
-        frag.createEl('code', { text: '|yaml' });
-        frag.appendText(' (e.g. ');
-        frag.createEl('code', { text: '{{title|yaml}}' });
-        frag.appendText(') to quote a value safely inside front matter.');
+        frag.appendText('Dates accept a moment.js format, e.g. ');
+        frag.createEl('code', { text: '{{date:YYYY-MM-DD}}', cls: 'bb-placeholder' });
+        frag.appendText(', and ');
+        frag.createEl('code', { text: '{{title|yaml}}', cls: 'bb-placeholder' });
+        frag.appendText(' quotes a value for front matter.');
       }),
     );
     templateSetting.settingEl.addClass('bb-template-setting');
