@@ -1,7 +1,7 @@
 import { normalizePath, TFile, TFolder, type App } from 'obsidian';
 import { errorMessage } from './errors';
 import type { Logger } from './logger';
-import { DEFAULT_TEMPLATE } from './settings';
+import { DEFAULT_TEMPLATE, resolveTemplate } from './template-store';
 import { readBookmarks } from './sources';
 import { findUnknownPlaceholders, renderTemplate, type DateFormatter } from './template';
 import type { BookmarkEntry, SyncHost, SyncResult, SyncTrigger } from './types';
@@ -96,9 +96,10 @@ export class SyncEngine {
         safariOverride: this.host.getSafariPickedBuffer?.() ?? null,
       });
       const filtered = filterByRootFolder(entries, this.host.settings.rootFolder, this.host.log);
+      const template = resolveTemplate(this.host.settings);
       // Pass the unfiltered entries too, so a bookmark that merely falls outside the
       // configured rootFolder is not mistaken for one that was deleted in the browser.
-      const result = await this.apply(filtered, entries);
+      const result = await this.apply(filtered, entries, template);
       result.durationMs = Date.now() - started;
       this.host.log.info(`Sync (${trigger}) finished`, result);
       return result;
@@ -130,6 +131,7 @@ export class SyncEngine {
   private async apply(
     entries: BookmarkEntry[],
     allBrowserEntries: BookmarkEntry[] = entries,
+    template: string = DEFAULT_TEMPLATE,
   ): Promise<SyncResult> {
     const { settings, log } = this.host;
     const result: SyncResult = {
@@ -148,7 +150,6 @@ export class SyncEngine {
     const folder = normalizePath(settings.targetFolder.trim() || '/');
     await this.ensureFolder(folder);
 
-    const template = settings.template.trim() ? settings.template : DEFAULT_TEMPLATE;
     const unknown = findUnknownPlaceholders(template);
     if (unknown.length)
       log.warn(`Template has unknown placeholders (left as-is): ${unknown.join(', ')}`);

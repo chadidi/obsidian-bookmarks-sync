@@ -7,7 +7,7 @@ Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into you
 ## Features
 
 - **Multi-browser support**: Import bookmarks directly from Google Chrome, Chromium (Brave, Edge, etc.), Safari (macOS), or Mozilla Firefox.
-- **Customizable templates**: Render bookmarks into notes using presets (Simple or Full) or craft your own template with placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
+- **Customizable templates**: A template is a markdown file in the plugin's `templates` folder, bundled into the build with its file name as the template name. Editing a template in settings switches the selection to **Custom** and leaves the built-in file untouched. Templates use placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
 - **Frontmatter ready**: Use filters like `{{title|yaml}}` to safely format text for YAML frontmatter.
 - **Hierarchy preservation**: Mirror your browser folder tree into vault subfolders, or save all bookmarks into a flat folder.
 - **Selective folder sync**: Filter by a specific root browser folder (e.g. `Bookmarks Bar/Work`) to sync only what you want.

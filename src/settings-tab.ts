@@ -9,10 +9,17 @@ import {
 } from 'obsidian';
 import type BookmarksSyncPlugin from './main';
 import { checkSourceAccess, defaultBrowserPath } from './paths';
-import { FULL_TEMPLATE, SIMPLE_TEMPLATE, isVaultRootTarget } from './settings';
+import { isVaultRootTarget } from './settings';
 import { findUnknownPlaceholders } from './template';
-import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from './types';
+import { CUSTOM_TEMPLATE_ID, TEMPLATE_NAMES, TEMPLATES } from './template-store';
+import { BROWSER_LABELS, type BrowserType } from './types';
 import { SafariPickerModal } from './ui/safari-picker-modal';
+
+/** Display label for a template: separators become spaces and the first letter is uppercase. */
+function templateLabel(name: string): string {
+  const spaced = name.replace(/[-_]+/g, ' ').trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
@@ -336,42 +343,66 @@ export class BookmarkSettingTab extends PluginSettingTab {
     /* ---------------- Template ---------------- */
     new Setting(containerEl).setName('Note template').setHeading();
 
-    let dropdownComponent: DropdownComponent | null = null;
-    let textAreaComponent: TextAreaComponent | null = null;
-    let isProgrammaticChange = false;
+    // A template name can disappear when a bundled template is renamed or removed; fall back so
+    // the dropdown never shows a value it does not list.
+    if (
+      settings.templateName !== CUSTOM_TEMPLATE_ID &&
+      !TEMPLATE_NAMES.includes(settings.templateName)
+    ) {
+      settings.templateName = TEMPLATE_NAMES[0] ?? CUSTOM_TEMPLATE_ID;
+      void this.plugin.saveSettings();
+    }
+
+    let templateArea: TextAreaComponent | null = null;
+    let templateDropdown: DropdownComponent | null = null;
+
+    /** Body of the selected template: the bundled template, or the custom template. */
+    function activeTemplateBody(): string {
+      if (settings.templateName === CUSTOM_TEMPLATE_ID) return settings.customTemplate;
+      return TEMPLATES[settings.templateName] ?? '';
+    }
+
+    /** Shows the body of the selected template in the editor. */
+    function refreshTemplateArea(): void {
+      if (templateArea) templateArea.setValue(activeTemplateBody());
+    }
+
+    /**
+     * Forks the current selection into the custom template, leaving the bundled template
+     * untouched. Used as soon as the user edits the body of a built-in template.
+     */
+    function switchToCustomTemplate(): void {
+      settings.templateName = CUSTOM_TEMPLATE_ID;
+      templateDropdown?.setValue(CUSTOM_TEMPLATE_ID);
+    }
 
     new Setting(containerEl)
-      .setName('Template preset')
-      .setDesc('Choose between predefined templates (Simple, Full) or customize your own.')
+      .setName('Template')
+      .setDesc(
+        'Built-in templates, one markdown file per template in the templates folder of the ' +
+          'plugin source. Adding a markdown file there and rebuilding the plugin adds a template.',
+      )
       .addDropdown((dd) => {
-        dropdownComponent = dd;
-        dd.addOption('simple', 'Simple')
-          .addOption('full', 'Full')
-          .addOption('custom', 'Custom')
-          .setValue(settings.templatePreset)
+        templateDropdown = dd;
+        for (const name of TEMPLATE_NAMES) {
+          dd.addOption(name, templateLabel(name));
+        }
+        dd.addOption(CUSTOM_TEMPLATE_ID, 'Custom')
+          .setValue(settings.templateName)
           .onChange(async (value) => {
-            const preset = value as TemplatePreset;
-            settings.templatePreset = preset;
-            if (preset === 'simple') {
-              settings.template = SIMPLE_TEMPLATE;
-            } else if (preset === 'full') {
-              settings.template = FULL_TEMPLATE;
-            } else {
-              settings.template = settings.customTemplate;
-            }
-            if (textAreaComponent) {
-              isProgrammaticChange = true;
-              textAreaComponent.setValue(settings.template);
-              isProgrammaticChange = false;
-            }
+            settings.templateName = value;
+            refreshTemplateArea();
             refreshWarning();
             await this.plugin.saveSettings();
           });
       });
 
-    const templateSetting = new Setting(containerEl).setName('Template').setDesc(
+    const templateSetting = new Setting(containerEl).setName('Template content').setDesc(
       createFragment((frag) => {
-        frag.appendText('Placeholders: ');
+        frag.appendText(
+          'Editing a built-in template switches the selection to Custom and leaves the ' +
+            'built-in template unchanged. Placeholders: ',
+        );
         ['{{title}}', '{{url}}', '{{date}}', '{{folder_path}}'].forEach((p, i) => {
           if (i) frag.appendText(', ');
           frag.createEl('code', { text: p });
@@ -398,25 +429,20 @@ export class BookmarkSettingTab extends PluginSettingTab {
     const warningEl = containerEl.createDiv({
       cls: 'setting-item-description bb-warning',
     });
-    const refreshWarning = () => {
-      const unknown = findUnknownPlaceholders(settings.template);
+
+    function refreshWarning(): void {
+      const unknown = findUnknownPlaceholders(activeTemplateBody());
       warningEl.setText(
         unknown.length ? `Unknown placeholders (will be left as-is): ${unknown.join(', ')}` : '',
       );
-    };
+    }
 
     templateSetting.addTextArea((area) => {
-      textAreaComponent = area;
-      area.setValue(settings.template).onChange((value) => {
-        if (isProgrammaticChange) return;
-        if (settings.templatePreset !== 'custom') {
-          settings.templatePreset = 'custom';
-          if (dropdownComponent) {
-            dropdownComponent.setValue('custom');
-          }
-        }
+      templateArea = area;
+      area.setValue(activeTemplateBody()).onChange((value) => {
+        // Editing a file template forks it into the custom template instead of writing the file.
+        if (settings.templateName !== CUSTOM_TEMPLATE_ID) switchToCustomTemplate();
         settings.customTemplate = value;
-        settings.template = value;
         refreshWarning();
         save();
       });
