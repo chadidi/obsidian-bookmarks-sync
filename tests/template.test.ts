@@ -66,6 +66,43 @@ test('renderTemplate slug filter keeps path separators', () => {
   assert.equal(rendered, 'Slug: music-stuff/sax-songs\nPath: bookmarks-bar/tech/javascript');
 });
 
+test('renderTemplate builds folder links with default and custom separators', () => {
+  const ctx: TemplateContext = {
+    ...baseCtx,
+    folderPath: ['Bookmarks Bar', 'Dev', 'Tools'],
+  };
+
+  assert.equal(
+    renderTemplate('{{folder_links}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '[[Bookmarks Bar]] / [[Dev]] / [[Tools]]',
+  );
+  assert.equal(
+    renderTemplate('{{folder_links: > }}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '[[Bookmarks Bar]] > [[Dev]] > [[Tools]]',
+  );
+});
+
+test('renderTemplate builds a yaml folder links list', () => {
+  const ctx: TemplateContext = {
+    ...baseCtx,
+    folderPath: ['Bookmarks Bar', 'Dev', 'Tools'],
+  };
+
+  assert.equal(
+    renderTemplate('{{folder_links_yaml}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '["[[Bookmarks Bar]]", "[[Dev]]", "[[Tools]]"]',
+  );
+  assert.equal(
+    renderTemplate(
+      '{{folder_links_yaml}}',
+      { ...baseCtx, folderPath: [] },
+      dummyFormatter,
+      'YYYY-MM-DD',
+    ),
+    '[]',
+  );
+});
+
 test('renderTemplate leaves unknown placeholders intact', () => {
   const template = `{{title}} by {{author}} with {{tag|lower}}`;
   const rendered = renderTemplate(template, baseCtx, dummyFormatter, 'YYYY-MM-DD');
@@ -91,6 +128,8 @@ test('findUnknownPlaceholders identifies invalid placeholders', () => {
 title: {{title|yaml}}
 url: {{url}}
 folder: {{folder}}
+folder_links: {{folder_links}}
+folder_links_yaml: {{folder_links_yaml}}
 path: {{folder_path}}
 date: {{date:YYYY-MM-DD}}
 synced: {{synced}}

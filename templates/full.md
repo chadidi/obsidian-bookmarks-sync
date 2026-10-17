@@ -6,6 +6,7 @@ date: {{date:DD/MM/YYYY}}
 synced: {{synced:DD/MM/YYYY}}
 source: {{browser|yaml}}
 domain: {{domain|yaml}}
+folders: {{ folder_links_yaml }}
 tags:
   - {{domain|slug}}
   - {{folder|slug}}
@@ -13,5 +14,3 @@ tags:
 ---
 
 {{url}}
-
-**Folder:** [[{{folder}}]]

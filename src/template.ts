@@ -19,10 +19,17 @@ export const PLACEHOLDERS = [
   'date',
   'folder_path',
   'folder',
+  'folder_links',
+  'folder_links_yaml',
   'domain',
   'browser',
   'synced',
 ] as const;
+
+/** Builds `[[segment]]` wiki links for each folder in the path. */
+function folderLinkSegments(folderPath: string[]): string[] {
+  return folderPath.map((segment) => `[[${segment}]]`);
+}
 
 /**
  * {{name}}  {{name:argument}}  {{name|filter}}  {{name:argument|filter}}
@@ -98,6 +105,15 @@ export function renderTemplate(
           break;
         case 'folder':
           value = ctx.folderPath[ctx.folderPath.length - 1] ?? '';
+          break;
+        case 'folder_links':
+          // The argument (raw, spaces included) overrides the default " / " separator.
+          value = folderLinkSegments(ctx.folderPath).join(arg !== undefined ? arg : ' / ');
+          break;
+        case 'folder_links_yaml':
+          value = `[${folderLinkSegments(ctx.folderPath)
+            .map((link) => JSON.stringify(link))
+            .join(', ')}]`;
           break;
         case 'domain':
           value = domainOf(ctx.url);
