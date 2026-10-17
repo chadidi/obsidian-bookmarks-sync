@@ -459,7 +459,7 @@ export class SyncEngine {
         if (folder.children.length > 0) break;
 
         try {
-          await this.app.vault.trash(folder, false);
+          await this.app.fileManager.trashFile(folder);
         } catch (err) {
           this.host.log.debug(
             `Could not remove empty folder "${currentPath}": ${errorMessage(err)}`,
@@ -473,7 +473,8 @@ export class SyncEngine {
   }
 
   /**
-   * Permanently deletes notes whose bookmark no longer exists in the browser source.
+   * Deletes notes whose bookmark no longer exists in the browser source, honoring the
+   * user's file deletion preference (system trash, Obsidian trash, or permanent).
    * Only URLs already tracked in the index are considered, so notes the plugin did not
    * create are never touched. `browserKeys` holds every URL the browser still contains
    * (including bookmarks filtered out by rootFolder), so those are never removed.
@@ -500,7 +501,7 @@ export class SyncEngine {
 
       const folder = this.getFileFolder(file);
       try {
-        await vault.delete(file);
+        await this.app.fileManager.trashFile(file);
         removed++;
         if (folder) foldersToCheck.add(folder);
       } catch (err) {
