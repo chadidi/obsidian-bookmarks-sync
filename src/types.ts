@@ -47,8 +47,6 @@ export interface SyncResult {
   durationMs: number;
 }
 
-export type TemplatePreset = 'simple' | 'full' | 'custom';
-
 /**
  * A Safari Bookmarks.plist the user selected through the native file dialog. macOS grants read
  * access to just that file for the current session, so the bytes live in memory only.
@@ -89,9 +87,13 @@ export interface BookmarkSettings {
 
   /** moment.js format used by {{date}} and {{synced}} when no explicit format is given. */
   dateFormat?: string;
-  templatePreset: TemplatePreset;
+  /**
+   * Template to render notes with: the name of a .md file in the templates folder (its file name
+   * without the extension), or CUSTOM_TEMPLATE_ID to use the free-form customTemplate below.
+   */
+  templateName: string;
+  /** Template body used when templateName is CUSTOM_TEMPLATE_ID. */
   customTemplate: string;
-  template: string;
   debug: boolean;
   /** Automatic syncs stay disabled until one manual sync has succeeded. */
   initialSyncDone: boolean;

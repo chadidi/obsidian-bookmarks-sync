@@ -1,31 +1,5 @@
-import type { BookmarkSettings, BrowserType, FolderStructure, TemplatePreset } from './types';
-
-export const FULL_TEMPLATE = `---
-title: {{title|yaml}}
-url: {{url|yaml}}
-folder: {{folder_path|yaml}}
-date: {{date}}
-source: {{browser}}
-tags:
-  - bookmark
----
-
-# {{title}}
-
-{{url}}
-
-**Folder:** {{folder_path}}
-`;
-
-export const SIMPLE_TEMPLATE = `[{{url}}]({{url}})
-`;
-
-export const PRESET_TEMPLATES: Record<'simple' | 'full', string> = {
-  simple: SIMPLE_TEMPLATE,
-  full: FULL_TEMPLATE,
-};
-
-export const DEFAULT_TEMPLATE = SIMPLE_TEMPLATE;
+import type { BookmarkSettings, BrowserType, FolderStructure } from './types';
+import { CUSTOM_TEMPLATE_ID, DEFAULT_TEMPLATE, TEMPLATES } from './template-store';
 
 export const DEFAULT_SETTINGS: BookmarkSettings = {
   browser: 'chrome',
@@ -37,12 +11,23 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
   folderStructure: 'folders',
   intervalMinutes: 0,
   syncOnStartup: true,
-  templatePreset: 'simple',
-  customTemplate: FULL_TEMPLATE,
-  template: SIMPLE_TEMPLATE,
+  templateName: 'simple',
+  customTemplate: DEFAULT_TEMPLATE,
   debug: false,
   initialSyncDone: false,
 };
+
+/**
+ * Template fields written by plugin versions that kept every template inline. Still read so
+ * existing vaults keep their chosen template after the move to markdown template files.
+ */
+interface LegacyTemplateFields {
+  templatePreset?: string;
+  template?: string;
+}
+
+/** Shape of a stored settings object: current fields plus the deprecated template fields. */
+export type StoredSettings = Partial<BookmarkSettings> & LegacyTemplateFields;
 
 /**
  * True when the target folder resolves to the vault root (empty or "/"). Syncing there can
@@ -55,10 +40,26 @@ export function isVaultRootTarget(targetFolder: string): boolean {
 
 const BROWSERS: BrowserType[] = ['chrome', 'chromium', 'firefox', 'safari'];
 
+/**
+ * Resolves which template a stored settings object should use. New data stores templateName
+ * directly; older data only stored a preset plus the template body, so it is mapped over.
+ */
+function normalizeTemplateName(raw: StoredSettings | undefined | null): string {
+  const stored = typeof raw?.templateName === 'string' ? raw.templateName.trim() : '';
+  if (stored) return stored;
+
+  if (raw?.templatePreset === 'full') return 'full';
+  if (raw?.templatePreset === 'simple') return 'simple';
+  if (raw?.templatePreset === 'custom') return CUSTOM_TEMPLATE_ID;
+
+  const body = typeof raw?.template === 'string' ? raw.template.trim() : '';
+  if (!body || body === TEMPLATES.simple) return 'simple';
+  if (body === TEMPLATES.full) return 'full';
+  return CUSTOM_TEMPLATE_ID;
+}
+
 /** Merges stored data over the defaults and repairs any invalid values. */
-export function normalizeSettings(
-  raw: Partial<BookmarkSettings> | undefined | null,
-): BookmarkSettings {
+export function normalizeSettings(raw: StoredSettings | undefined | null): BookmarkSettings {
   const merged: BookmarkSettings = {
     ...DEFAULT_SETTINGS,
     ...(raw ?? {}),
@@ -70,34 +71,17 @@ export function normalizeSettings(
   }
   merged.intervalMinutes = Math.min(Math.floor(merged.intervalMinutes), 10080); // max one week
 
-  const PRESETS: TemplatePreset[] = ['simple', 'full', 'custom'];
-  if (!raw?.templatePreset || !PRESETS.includes(raw.templatePreset)) {
-    if (raw?.template === SIMPLE_TEMPLATE || !raw?.template) {
-      merged.templatePreset = 'simple';
-    } else if (raw?.template === FULL_TEMPLATE) {
-      merged.templatePreset = 'full';
-    } else {
-      merged.templatePreset = 'custom';
-    }
-  } else {
-    merged.templatePreset = raw.templatePreset;
-  }
+  merged.templateName = normalizeTemplateName(raw);
 
   const hasExplicitCustom =
     typeof raw?.customTemplate === 'string' && Boolean(raw.customTemplate.trim());
   if (!hasExplicitCustom) {
     merged.customTemplate =
-      merged.templatePreset === 'custom' && typeof raw?.template === 'string' && raw.template.trim()
+      merged.templateName === CUSTOM_TEMPLATE_ID &&
+      typeof raw?.template === 'string' &&
+      raw.template.trim()
         ? raw.template
-        : FULL_TEMPLATE;
-  }
-
-  if (merged.templatePreset === 'simple') {
-    merged.template = SIMPLE_TEMPLATE;
-  } else if (merged.templatePreset === 'full') {
-    merged.template = FULL_TEMPLATE;
-  } else {
-    merged.template = merged.customTemplate;
+        : DEFAULT_TEMPLATE;
   }
 
   if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;

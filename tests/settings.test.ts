@@ -1,12 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  normalizeSettings,
-  DEFAULT_SETTINGS,
-  FULL_TEMPLATE,
-  SIMPLE_TEMPLATE,
-  isVaultRootTarget,
-} from '../src/settings';
+import { normalizeSettings, DEFAULT_SETTINGS, isVaultRootTarget } from '../src/settings';
+import { CUSTOM_TEMPLATE_ID, DEFAULT_TEMPLATE } from '../src/template-store';
 
 test('normalizeSettings returns defaults when given undefined or empty object', () => {
   const settings = normalizeSettings(undefined);
@@ -43,30 +38,35 @@ test('normalizeSettings validates browser and folderStructure', () => {
   assert.equal(valid.folderStructure, 'flat');
 });
 
-test('normalizeSettings maintains template preset and templates synchronization', () => {
-  const simple = normalizeSettings({ templatePreset: 'simple' });
-  assert.equal(simple.templatePreset, 'simple');
-  assert.equal(simple.template, SIMPLE_TEMPLATE);
+test('normalizeSettings keeps the selected template name', () => {
+  assert.equal(normalizeSettings({}).templateName, 'simple');
+  assert.equal(normalizeSettings({ templateName: 'full' }).templateName, 'full');
+  assert.equal(normalizeSettings({ templateName: 'my-template' }).templateName, 'my-template');
+  assert.equal(normalizeSettings({ templateName: '  spaced  ' }).templateName, 'spaced');
+  assert.equal(normalizeSettings({ templateName: '' }).templateName, 'simple');
+});
 
-  const full = normalizeSettings({ templatePreset: 'full' });
-  assert.equal(full.templatePreset, 'full');
-  assert.equal(full.template, FULL_TEMPLATE);
+test('normalizeSettings migrates legacy template presets to template names', () => {
+  assert.equal(normalizeSettings({ templatePreset: 'full' }).templateName, 'full');
+  assert.equal(normalizeSettings({ templatePreset: 'simple' }).templateName, 'simple');
 
   const custom = normalizeSettings({
     templatePreset: 'custom',
-    customTemplate: '# Custom Bookmark\n{{title}}',
+    template: '# Custom Bookmark\n{{title}}',
   });
-  assert.equal(custom.templatePreset, 'custom');
-  assert.equal(custom.template, '# Custom Bookmark\n{{title}}');
+  assert.equal(custom.templateName, CUSTOM_TEMPLATE_ID);
+  assert.equal(custom.customTemplate, '# Custom Bookmark\n{{title}}');
 });
 
-test('normalizeSettings auto-detects legacy custom template without explicit preset', () => {
+test('normalizeSettings treats an unknown legacy template body as custom', () => {
   const legacyCustom = normalizeSettings({
     template: '# My Legacy Custom Template\n{{url}}',
   });
-  assert.equal(legacyCustom.templatePreset, 'custom');
+  assert.equal(legacyCustom.templateName, CUSTOM_TEMPLATE_ID);
   assert.equal(legacyCustom.customTemplate, '# My Legacy Custom Template\n{{url}}');
-  assert.equal(legacyCustom.template, '# My Legacy Custom Template\n{{url}}');
+
+  const legacyDefault = normalizeSettings({ customTemplate: DEFAULT_TEMPLATE });
+  assert.equal(legacyDefault.templateName, 'simple');
 });
 
 test('isVaultRootTarget only accepts an empty or "/" target folder', () => {

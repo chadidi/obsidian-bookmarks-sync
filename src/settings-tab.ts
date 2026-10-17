@@ -9,10 +9,17 @@ import {
 } from 'obsidian';
 import type BookmarksSyncPlugin from './main';
 import { checkSourceAccess, defaultBrowserPath } from './paths';
-import { FULL_TEMPLATE, SIMPLE_TEMPLATE, isVaultRootTarget } from './settings';
+import { isVaultRootTarget } from './settings';
 import { findUnknownPlaceholders } from './template';
-import { BROWSER_LABELS, type BrowserType, type TemplatePreset } from './types';
+import { CUSTOM_TEMPLATE_ID, TEMPLATE_NAMES, TEMPLATES } from './template-store';
+import { BROWSER_LABELS, type BrowserType } from './types';
 import { SafariPickerModal } from './ui/safari-picker-modal';
+
+/** Display label for a template: separators become spaces and the first letter is uppercase. */
+function templateLabel(name: string): string {
+  const spaced = name.replace(/[-_]+/g, ' ').trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 const PATH_HELP: Record<BrowserType, string> = {
   chrome:
@@ -188,8 +195,8 @@ export class BookmarkSettingTab extends PluginSettingTab {
       return;
     }
 
-    /* ---------------- Output ---------------- */
-    new Setting(containerEl).setName('Output').setHeading();
+    /* ---------------- Destination ---------------- */
+    new Setting(containerEl).setName('Destination').setHeading();
 
     new Setting(containerEl)
       .setName('Target folder')
@@ -334,63 +341,83 @@ export class BookmarkSettingTab extends PluginSettingTab {
       );
 
     /* ---------------- Template ---------------- */
-    new Setting(containerEl).setName('Note template').setHeading();
+    new Setting(containerEl).setName('Template').setHeading();
 
-    let dropdownComponent: DropdownComponent | null = null;
-    let textAreaComponent: TextAreaComponent | null = null;
-    let isProgrammaticChange = false;
+    // A template name can disappear when a bundled template is renamed or removed; fall back so
+    // the dropdown never shows a value it does not list.
+    if (
+      settings.templateName !== CUSTOM_TEMPLATE_ID &&
+      !TEMPLATE_NAMES.includes(settings.templateName)
+    ) {
+      settings.templateName = TEMPLATE_NAMES[0] ?? CUSTOM_TEMPLATE_ID;
+      void this.plugin.saveSettings();
+    }
+
+    let templateArea: TextAreaComponent | null = null;
+    let templateDropdown: DropdownComponent | null = null;
+
+    /** Body of the selected template: the bundled template, or the custom template. */
+    function activeTemplateBody(): string {
+      if (settings.templateName === CUSTOM_TEMPLATE_ID) return settings.customTemplate;
+      return TEMPLATES[settings.templateName] ?? '';
+    }
+
+    /** Shows the body of the selected template in the editor. */
+    function refreshTemplateArea(): void {
+      if (templateArea) templateArea.setValue(activeTemplateBody());
+    }
+
+    /**
+     * Forks the current selection into the custom template, leaving the bundled template
+     * untouched. Used as soon as the user edits the body of a built-in template.
+     */
+    function switchToCustomTemplate(): void {
+      settings.templateName = CUSTOM_TEMPLATE_ID;
+      templateDropdown?.setValue(CUSTOM_TEMPLATE_ID);
+    }
 
     new Setting(containerEl)
-      .setName('Template preset')
-      .setDesc('Choose between predefined templates (Simple, Full) or customize your own.')
+      .setName('Template')
+      .setDesc('Choose a template for your bookmarks.')
       .addDropdown((dd) => {
-        dropdownComponent = dd;
-        dd.addOption('simple', 'Simple')
-          .addOption('full', 'Full')
-          .addOption('custom', 'Custom')
-          .setValue(settings.templatePreset)
+        templateDropdown = dd;
+        for (const name of TEMPLATE_NAMES) {
+          dd.addOption(name, templateLabel(name));
+        }
+        dd.addOption(CUSTOM_TEMPLATE_ID, 'Custom')
+          .setValue(settings.templateName)
           .onChange(async (value) => {
-            const preset = value as TemplatePreset;
-            settings.templatePreset = preset;
-            if (preset === 'simple') {
-              settings.template = SIMPLE_TEMPLATE;
-            } else if (preset === 'full') {
-              settings.template = FULL_TEMPLATE;
-            } else {
-              settings.template = settings.customTemplate;
-            }
-            if (textAreaComponent) {
-              isProgrammaticChange = true;
-              textAreaComponent.setValue(settings.template);
-              isProgrammaticChange = false;
-            }
+            settings.templateName = value;
+            refreshTemplateArea();
             refreshWarning();
             await this.plugin.saveSettings();
           });
       });
 
-    const templateSetting = new Setting(containerEl).setName('Template').setDesc(
+    const templateSetting = new Setting(containerEl).setName('Template content').setDesc(
       createFragment((frag) => {
+        frag.appendText('Editing a built-in template switches to Custom.');
+        frag.createEl('br');
         frag.appendText('Placeholders: ');
-        ['{{title}}', '{{url}}', '{{date}}', '{{folder_path}}'].forEach((p, i) => {
-          if (i) frag.appendText(', ');
-          frag.createEl('code', { text: p });
-        });
-        frag.appendText('. Also: ');
-        ['{{folder}}', '{{domain}}', '{{browser}}', '{{synced}}'].forEach((p, i) => {
-          if (i) frag.appendText(', ');
-          frag.createEl('code', { text: p });
+        [
+          '{{title}}',
+          '{{url}}',
+          '{{date}}',
+          '{{folder_path}}',
+          '{{folder}}',
+          '{{domain}}',
+          '{{browser}}',
+          '{{synced}}',
+        ].forEach((placeholder, index) => {
+          if (index) frag.appendText(', ');
+          frag.createEl('code', { text: placeholder, cls: 'bb-placeholder' });
         });
         frag.createEl('br');
-        frag.appendText('Date placeholders accept a moment.js format, e.g. ');
-        frag.createEl('code', {
-          text: '{{date:YYYY-MM-DD HH:mm}}',
-        });
-        frag.appendText('. Add ');
-        frag.createEl('code', { text: '|yaml' });
-        frag.appendText(' (e.g. ');
-        frag.createEl('code', { text: '{{title|yaml}}' });
-        frag.appendText(') to quote a value safely inside front matter.');
+        frag.appendText('Dates accept a moment.js format, e.g. ');
+        frag.createEl('code', { text: '{{date:YYYY-MM-DD}}', cls: 'bb-placeholder' });
+        frag.appendText(', and ');
+        frag.createEl('code', { text: '{{title|yaml}}', cls: 'bb-placeholder' });
+        frag.appendText(' quotes a value for front matter.');
       }),
     );
     templateSetting.settingEl.addClass('bb-template-setting');
@@ -398,25 +425,20 @@ export class BookmarkSettingTab extends PluginSettingTab {
     const warningEl = containerEl.createDiv({
       cls: 'setting-item-description bb-warning',
     });
-    const refreshWarning = () => {
-      const unknown = findUnknownPlaceholders(settings.template);
+
+    function refreshWarning(): void {
+      const unknown = findUnknownPlaceholders(activeTemplateBody());
       warningEl.setText(
         unknown.length ? `Unknown placeholders (will be left as-is): ${unknown.join(', ')}` : '',
       );
-    };
+    }
 
     templateSetting.addTextArea((area) => {
-      textAreaComponent = area;
-      area.setValue(settings.template).onChange((value) => {
-        if (isProgrammaticChange) return;
-        if (settings.templatePreset !== 'custom') {
-          settings.templatePreset = 'custom';
-          if (dropdownComponent) {
-            dropdownComponent.setValue('custom');
-          }
-        }
+      templateArea = area;
+      area.setValue(activeTemplateBody()).onChange((value) => {
+        // Editing a file template forks it into the custom template instead of writing the file.
+        if (settings.templateName !== CUSTOM_TEMPLATE_ID) switchToCustomTemplate();
         settings.customTemplate = value;
-        settings.template = value;
         refreshWarning();
         save();
       });
