@@ -38,6 +38,21 @@ function domainOf(url: string): string {
   }
 }
 
+function slugify(value: string): string {
+  return value
+    .split('/')
+    .map((segment) =>
+      segment
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, '-')
+        .replace(/^-+|-+$/g, ''),
+    )
+    .filter((segment) => segment.length > 0)
+    .join('/');
+}
+
 function applyFilter(value: string, filter: string | undefined): string {
   switch ((filter ?? '').toLowerCase()) {
     case 'yaml':
@@ -47,6 +62,9 @@ function applyFilter(value: string, filter: string | undefined): string {
       return value.toLowerCase();
     case 'upper':
       return value.toUpperCase();
+    case 'slug':
+      // Slashes are kept as path separators so folder paths stay valid.
+      return slugify(value);
     default:
       return value;
   }
