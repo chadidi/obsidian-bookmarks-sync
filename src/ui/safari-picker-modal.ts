@@ -27,7 +27,7 @@ export class SafariPickerModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('bb-safari-picker');
-    contentEl.createEl('h2', { text: 'Grant access to Safari bookmarks' });
+    contentEl.createEl('h2', { text: 'Grant access to safari bookmarks' });
 
     contentEl.createEl('p', {
       text:
@@ -36,7 +36,7 @@ export class SafariPickerModal extends Modal {
     });
 
     const steps = contentEl.createEl('ol', { cls: 'bb-picker-steps' });
-    addStep(steps, 'Click "Choose Bookmarks.plist" below to open the macOS file picker.');
+    addStep(steps, 'Click "Choose bookmarks.plist" below to open the macOS file picker.');
     addStep(steps, 'In the Finder window, press Cmd+Shift+G to open "Go to folder".');
     addStep(steps, 'Paste the path below and press Enter.');
     addStep(steps, 'Select Bookmarks.plist and click Open.');
@@ -55,7 +55,7 @@ export class SafariPickerModal extends Modal {
     new Setting(contentEl)
       .addButton((btn) =>
         btn
-          .setButtonText('Choose Bookmarks.plist')
+          .setButtonText('Choose bookmarks.plist')
           .setCta()
           .onClick(() => input.click()),
       )

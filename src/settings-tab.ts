@@ -123,13 +123,13 @@ export class BookmarkSettingTab extends PluginSettingTab {
           frag.appendText('Sync only bookmarks inside a specific browser folder. Use ');
           frag.createEl('code', { text: '/' });
           frag.appendText(' to separate nested folders, e.g. ');
-          frag.createEl('code', { text: 'Bookmarks Bar/Work' });
+          frag.createEl('code', { text: 'Favorites/work' });
           frag.appendText('. Leave empty to sync all bookmarks. Matching is case-insensitive.');
         }),
       )
       .addText((text) => {
         text
-          .setPlaceholder('e.g. Bookmarks Bar/Work (leave empty for all)')
+          .setPlaceholder('E.g. Favorites/work (leave empty for all)')
           .setValue(settings.rootFolder)
           .onChange((value) => {
             settings.rootFolder = value.trim();
@@ -150,7 +150,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
     if (browser === 'firefox') {
       new Setting(containerEl)
-        .setName('sqlite3 executable')
+        .setName('Sqlite3 executable')
         .setDesc(
           createFragment((frag) => {
             frag.appendText(
@@ -168,7 +168,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
         )
         .addText((text) =>
           text
-            .setPlaceholder('sqlite3')
+            .setPlaceholder('Sqlite3')
             .setValue(settings.sqlite3Path)
             .onChange((value) => {
               settings.sqlite3Path = value.trim() || 'sqlite3';
