@@ -15,15 +15,14 @@ if you want to view the source, please visit the github repository of this plugi
 </iframe>
 `;var me=`---
 title: {{title|yaml}}
+slug: {{title|slug}}
 url: {{url|yaml}}
-folder: {{folder_path|yaml}}
-date: {{date}}
+date: {{date:DD/MM/YYYY}}
 source: {{browser}}
 tags:
-  - bookmark
+  - {{folder|slug}}
+  - {{folder_path|slug}}
 ---
-
-# {{title}}
 
 {{url}}
 
