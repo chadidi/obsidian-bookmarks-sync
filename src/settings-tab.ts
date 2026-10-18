@@ -96,7 +96,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
       this.targetGuardGroup(),
       { type: 'group', heading: 'Automation', items: this.automationItems() },
       { type: 'group', heading: 'Template', items: this.templateItems() },
-      { type: 'group', heading: 'Diagnostics', items: this.diagnosticsItems() },
     ];
   }
 
@@ -541,37 +540,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
             area.inputEl.spellcheck = false;
           });
           setting.settingEl.addClass('bb-template-setting');
-        },
-      },
-      {
-        name: '',
-        searchable: false,
-        render: (setting) => {
-          warningEl = setting.descEl;
-          warningEl.addClass('bb-warning');
-          refreshWarning();
-        },
-      },
-    ];
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Diagnostics                                                         */
-  /* ------------------------------------------------------------------ */
-
-  private diagnosticsItems(): SettingGroupItem[] {
-    const settings = this.plugin.settings;
-    return [
-      {
-        name: 'Verbose logging',
-        desc: 'Write detailed progress to the developer console (Ctrl/Cmd+Shift+I).',
-        render: (setting) => {
-          setting.addToggle((toggle) =>
-            toggle.setValue(settings.debug).onChange(async (value) => {
-              settings.debug = value;
-              await this.plugin.saveSettings();
-            }),
-          );
         },
       },
     ];

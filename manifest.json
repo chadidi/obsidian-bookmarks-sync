@@ -1,7 +1,7 @@
 {
 	"id": "bookmarks-sync",
 	"name": "Bookmarks Sync",
-	"version": "1.1.8",
+	"version": "1.1.9",
 	"minAppVersion": "1.13.0",
 	"description": "Import Safari, Chrome or Firefox bookmarks as individual Markdown notes, using your own template.",
 	"author": "Abdellah Chadidi",
