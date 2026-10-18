@@ -17,16 +17,14 @@ Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into you
 
 ## Installation
 
-### Beta testing with BRAT (Recommended)
+### Community plugins (Recommended)
 
-You can easily install and test beta releases of this plugin using [Obsidian42 - BRAT](https://github.com/TfTHacker/obsidian42-brat):
+Install directly from the [Obsidian community plugins](https://community.obsidian.md/plugins/bookmarks-sync) store:
 
-1. Install and enable the **BRAT** plugin from Obsidian's Community Plugins.
-2. Open Obsidian **Settings** → **BRAT**.
-3. Under **Beta Plugin List**, click **Add Beta plugin**.
-4. Enter the GitHub repository: `chadidi/obsidian-bookmarks-sync` (or `https://github.com/chadidi/obsidian-bookmarks-sync`).
-5. Click **Add Plugin**. BRAT will download the latest release assets (`manifest.json`, `main.js`, and `styles.css`).
-6. Go to **Settings** → **Community plugins** and enable **Bookmarks Sync**.
+1. Open Obsidian **Settings** → **Community plugins**.
+2. Select **Browse** and search for **Bookmarks Sync**.
+3. Select **Install**, then select **Enable**.
+4. Open **Settings** → **Bookmarks Sync** to configure the plugin.
 
 ### Manual installation
 
