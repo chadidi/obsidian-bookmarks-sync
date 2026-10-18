@@ -75,8 +75,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 | `{{folder}}` | Immediate parent folder name (e.g. `Obsidian`). |
 | `{{folder_links}}` | Folder path as wiki links separated by ` / ` (e.g. `[[Bookmarks Bar]] / [[Dev]] / [[Obsidian]]`). Pass a custom separator after a colon, e.g. `{{folder_links: > }}` gives `[[Bookmarks Bar]] > [[Dev]] > [[Obsidian]]`. |
 | `{{folder_links_yaml}}` | Folder path as a quoted list of wiki links for front matter (e.g. `["[[Bookmarks Bar]]", "[[Dev]]", "[[Obsidian]]"]`). |
-| `{{folder_tags}}` | Folder path as quoted, comma-separated tag names for a front matter tag list, sanitized to valid Obsidian tags (whitespace becomes `-`, characters like `( ) . &` are removed), e.g. `tags: [bookmark, {{folder_tags}}]` gives `tags: [bookmark, "Bookmarks-Bar", "Dev", "Obsidian"]`. |
-| `{{folder_hashtags}}` | Folder path as inline hashtags, sanitized to valid Obsidian tags (whitespace becomes `-`, characters like `( ) . &` are removed), e.g. `#Bookmarks-Bar #Dev #Obsidian`. |
+| `{{folder_tags}}` | Folder path as quoted, comma-separated tag names for a front matter tag list, sanitized to valid Obsidian tags (whitespace becomes `-`, characters like `( ) . &` are removed, emoji are kept), e.g. `tags: [bookmark, {{folder_tags}}]` gives `tags: [bookmark, "Bookmarks-Bar", "Dev", "Obsidian"]`. |
+| `{{folder_hashtags}}` | Folder path as inline hashtags, sanitized to valid Obsidian tags (whitespace becomes `-`, characters like `( ) . &` are removed, emoji are kept), e.g. `#Bookmarks-Bar #Dev #Obsidian`. |
 | `{{domain}}` | Clean domain name without `www.` (e.g. `obsidian.md`). |
 | `{{browser}}` | Browser name (e.g. `Google Chrome`, `Chromium`, `Safari`, `Firefox`). |
 

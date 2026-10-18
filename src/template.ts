@@ -34,15 +34,26 @@ function folderLinkSegments(folderPath: string[]): string[] {
 }
 
 /**
+ * Characters Obsidian keeps in tags: letters, numbers, `_`, `-` and `/`
+ * (nested tags), plus emoji. Emoji support includes the joiners and modifiers
+ * that make up multi-codepoint sequences: ZWJ, variation selectors, skin-tone
+ * modifiers, keycap marks and regional-indicator flags.
+ */
+/* eslint-disable no-misleading-character-class -- emoji code points are kept on purpose */
+const TAG_DISALLOWED_CHARS_RE =
+  /[^\p{L}\p{N}_\-/\p{Extended_Pictographic}\u200D\uFE0E\uFE0F\u20E3\u{1F3FB}-\u{1F3FF}\u{1F1E6}-\u{1F1FF}]/gu;
+/* eslint-enable no-misleading-character-class -- end of the emoji-aware tag regex */
+
+/**
  * Converts a folder name into a valid Obsidian tag name.
  *  - whitespace becomes "-"
  *  - every character Obsidian disallows in tags (e.g. `( ) . , '`) is removed;
- *    only letters, numbers, `_`, `-` and `/` (nested tags) are kept
+ *    letters, numbers, `_`, `-`, `/` (nested tags) and emoji are kept
  */
 function folderTag(segment: string): string {
   return segment
     .replace(/\s+/g, '-')
-    .replace(/[^\p{L}\p{N}_\-/]/gu, '')
+    .replace(TAG_DISALLOWED_CHARS_RE, '')
     .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '');
 }

@@ -138,6 +138,22 @@ test('renderTemplate strips characters Obsidian disallows in tags', () => {
   );
 });
 
+test('renderTemplate keeps emoji in folder tags and hashtags', () => {
+  const ctx: TemplateContext = {
+    ...baseCtx,
+    folderPath: ['📚 Reading', 'Dev 🛠️', 'Family 👨‍👩‍👧', 'Flags 🇺🇸', 'Wave 👋🏽'],
+  };
+
+  assert.equal(
+    renderTemplate('{{folder_tags}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '"📚-Reading", "Dev-🛠️", "Family-👨‍👩‍👧", "Flags-🇺🇸", "Wave-👋🏽"',
+  );
+  assert.equal(
+    renderTemplate('{{folder_hashtags}}', ctx, dummyFormatter, 'YYYY-MM-DD'),
+    '#📚-Reading #Dev-🛠️ #Family-👨‍👩‍👧 #Flags-🇺🇸 #Wave-👋🏽',
+  );
+});
+
 test('renderTemplate leaves unknown placeholders intact', () => {
   const template = `{{title}} by {{author}} with {{tag|lower}}`;
   const rendered = renderTemplate(template, baseCtx, dummyFormatter, 'YYYY-MM-DD');
