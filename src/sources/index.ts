@@ -32,10 +32,7 @@ export async function readBookmarks(
     case 'chromium':
       return { entries: await readChromeBookmarks(sourcePath, log, browser), sourcePath };
     case 'firefox':
-      return {
-        entries: await readFirefoxBookmarks(sourcePath, { sqlite3Path: settings.sqlite3Path }, log),
-        sourcePath,
-      };
+      return { entries: await readFirefoxBookmarks(sourcePath, log), sourcePath };
     case 'safari': {
       const override = options.safariOverride;
       if (override) {

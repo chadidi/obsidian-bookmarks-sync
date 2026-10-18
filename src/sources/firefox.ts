@@ -1,4 +1,3 @@
-import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -7,10 +6,6 @@ import { BookmarkSourceError, errorMessage } from '../errors';
 import type { BookmarkEntry } from '../types';
 import { isImportableUrl, readFileOrThrow, translateFsError } from './common';
 import { decodeMozLz4 } from './lz4';
-
-export interface FirefoxOptions {
-  sqlite3Path: string;
-}
 
 const ROOT_GUID = 'root________';
 const TAGS_GUID = 'tags________';
@@ -34,7 +29,6 @@ const BACKUP_ROOT_LABELS: Record<string, string> = {
 
 export async function readFirefoxBookmarks(
   sourcePath: string,
-  options: FirefoxOptions,
   log: Logger,
 ): Promise<BookmarkEntry[]> {
   let stat: fs.Stats;
@@ -48,7 +42,7 @@ export async function readFirefoxBookmarks(
     const backup = await newestBackupIn(sourcePath);
     if (backup) return readBackupFile(backup, log);
     const places = path.join(sourcePath, 'places.sqlite');
-    if (fs.existsSync(places)) return readPlaces(places, options, log);
+    if (fs.existsSync(places)) return readPlaces(places, log);
     throw new BookmarkSourceError(
       `${sourcePath} contains neither places.sqlite nor bookmarks-*.jsonlz4 backups.`,
     );
@@ -56,11 +50,11 @@ export async function readFirefoxBookmarks(
 
   const lower = sourcePath.toLowerCase();
   if (lower.endsWith('.jsonlz4') || lower.endsWith('.json')) return readBackupFile(sourcePath, log);
-  return readPlaces(sourcePath, options, log);
+  return readPlaces(sourcePath, log);
 }
 
 /* ------------------------------------------------------------------ */
-/* places.sqlite via the sqlite3 command-line tool                     */
+/* places.sqlite via the SQLite module built into Node (node:sqlite)   */
 /* ------------------------------------------------------------------ */
 
 interface PlacesRow {
@@ -78,27 +72,28 @@ const PLACES_QUERY =
   'b.dateAdded AS dateAdded, p.url AS url ' +
   'FROM moz_bookmarks b LEFT JOIN moz_places p ON p.id = b.fk;';
 
-function runSqlite(executable: string, args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    execFile(
-      executable,
-      args,
-      { timeout: 60_000, maxBuffer: 256 * 1024 * 1024, windowsHide: true },
-      (err, stdout, stderr) => {
-        if (!err) return resolve(stdout);
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          return reject(
-            new BookmarkSourceError(
-              `Could not run "${executable}". Install the sqlite3 command-line tool (or set its full path in ` +
-                `the plugin settings), or point the Firefox path at a bookmarkbackups *.jsonlz4 file instead.`,
-              err,
-            ),
-          );
-        }
-        reject(new BookmarkSourceError(`sqlite3 failed: ${(stderr || err.message).trim()}`, err));
-      },
+/**
+ * Node's built-in SQLite is available unflagged since Node 22.13, which is what Obsidian's
+ * Electron ships. It is imported lazily because the module is still experimental and older
+ * Electron builds do not have it: a top-level import would fail plugin load instead of only
+ * this source.
+ */
+async function loadSqlite(): Promise<typeof import('node:sqlite')> {
+  try {
+    // In a bundled CJS environment (Obsidian), require is the most reliable way to load Node builtins.
+    // We use a dynamic lookup to avoid linter and bundler issues.
+    const req = (window as unknown as Record<string, unknown>)['require'];
+    if (typeof req === 'function') {
+      return (req as (id: string) => typeof import('node:sqlite'))('node:sqlite');
+    }
+    return await import('node:sqlite');
+  } catch (err) {
+    throw new BookmarkSourceError(
+      'This Obsidian build does not provide the built-in SQLite module (node:sqlite). ' +
+        'Point the Firefox path at a bookmarkbackups *.jsonlz4 file or folder instead.',
+      err,
     );
-  });
+  }
 }
 
 async function copyIfExists(from: string, to: string): Promise<void> {
@@ -109,18 +104,16 @@ async function copyIfExists(from: string, to: string): Promise<void> {
   }
 }
 
-async function readPlaces(
-  dbPath: string,
-  options: FirefoxOptions,
-  log: Logger,
-): Promise<BookmarkEntry[]> {
+async function readPlaces(dbPath: string, log: Logger): Promise<BookmarkEntry[]> {
+  const { DatabaseSync } = await loadSqlite();
+
   // Firefox keeps places.sqlite open in WAL mode. Querying it in place can fail with "database is
   // locked" and would miss uncheckpointed changes. We therefore snapshot the database together
   // with its -wal file into a private temp dir; SQLite replays the WAL when opening the copy.
   const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'obsidian-bookmarks-'));
   try {
     const copy = path.join(tmp, 'places.sqlite');
-    let stdout = '';
+    let rows: PlacesRow[] = [];
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         await copyIfExists(`${dbPath}-wal`, `${copy}-wal`);
@@ -129,7 +122,13 @@ async function readPlaces(
         throw translateFsError(err, dbPath);
       }
       try {
-        stdout = await runSqlite(options.sqlite3Path || 'sqlite3', ['-json', copy, PLACES_QUERY]);
+        // Read-only, so the snapshot is never written to; the WAL is still replayed into it.
+        const db = new DatabaseSync(copy, { readOnly: true });
+        try {
+          rows = db.prepare(PLACES_QUERY).all() as unknown as PlacesRow[];
+        } finally {
+          db.close();
+        }
         break;
       } catch (err) {
         // A torn snapshot (Firefox checkpointed mid-copy) is rare; retry once.
@@ -140,17 +139,6 @@ async function readPlaces(
       }
     }
 
-    let rows: PlacesRow[] = [];
-    if (stdout.trim()) {
-      try {
-        rows = JSON.parse(stdout) as PlacesRow[];
-      } catch (err) {
-        throw new BookmarkSourceError(
-          'sqlite3 did not return JSON. Your sqlite3 is probably older than 3.33; please update it.',
-          err,
-        );
-      }
-    }
     const entries = placesRowsToEntries(rows);
     log.debug(`Firefox (places.sqlite): parsed ${entries.length} bookmarks`);
     return entries;

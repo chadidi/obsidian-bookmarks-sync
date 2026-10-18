@@ -104,8 +104,8 @@ Firefox supports two distinct ingestion strategies: live `places.sqlite` databas
 - [ ] **Automatic Profile Detection:**
   - Leave **Firefox path** empty in settings.
   - Verify the plugin automatically finds the most active profile (prefers `*.default-release` in Firefox's profiles directory).
-- [ ] **SQLite3 Tool Check:**
-  - Ensure `sqlite3` CLI tool is accessible (default in macOS and most Linux distributions).
+- [ ] **Built-in SQLite Check:**
+  - No external tool is required: `places.sqlite` is read with the SQLite module built into Obsidian.
   - Run **Sync now**.
   - Confirm bookmarks are extracted from `places.sqlite`.
 - [ ] **WAL Mode & Concurrent Browser Snapshot:**
@@ -121,15 +121,15 @@ Firefox supports two distinct ingestion strategies: live `places.sqlite` databas
 - [ ] **Backup Folder Auto-Detection:**
   - Set **Firefox path** to your Firefox profile directory or `bookmarkbackups` subfolder.
   - Run **Sync now**.
-  - Verify the plugin locates the newest `bookmarks-YYYY-MM-DD_*.jsonlz4` and decompresses it using the built-in mozlz4 decompressor without needing `sqlite3`.
+  - Verify the plugin locates the newest `bookmarks-YYYY-MM-DD_*.jsonlz4` and decompresses it using the built-in mozlz4 decompressor.
 - [ ] **Direct JSON Backup:**
   - In Firefox, export bookmarks manually: **Bookmarks → Manage Bookmarks → Import and Backup → Backup...** (or Export to JSON).
   - Set the path in settings to the exported `.json` file.
   - Run **Sync now** and verify all bookmarks import properly.
 
-### Mode C: Custom sqlite3 Path (Windows or Custom Installs)
-- [ ] Set **sqlite3 executable** path in settings (e.g., `C:\sqlite3\sqlite3.exe`).
-- [ ] Run sync and verify successful execution.
+### Mode C: Missing Built-in SQLite (older Obsidian builds)
+- [ ] Point **Firefox path** at a `bookmarkbackups/*.jsonlz4` file or folder.
+- [ ] Run sync and verify it succeeds without the `places.sqlite` reader.
 
 ---
 

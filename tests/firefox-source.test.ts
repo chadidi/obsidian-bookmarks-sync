@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { placesRowsToEntries, readFirefoxBookmarks } from '../src/sources/firefox';
 import { BookmarkSourceError } from '../src/errors';
 import { Logger } from '../src/logger';
@@ -123,7 +124,7 @@ test('readFirefoxBookmarks reads JSON backup file', async () => {
 
   try {
     await fs.writeFile(tmpFile, JSON.stringify(backupData), 'utf8');
-    const entries = await readFirefoxBookmarks(tmpFile, { sqlite3Path: 'sqlite3' }, silentLogger);
+    const entries = await readFirefoxBookmarks(tmpFile, silentLogger);
 
     assert.equal(entries.length, 1);
     assert.equal(entries[0]?.title, 'MDN Web Docs');
@@ -139,7 +140,7 @@ test('readFirefoxBookmarks throws error on empty directory without places or bac
 
   try {
     await assert.rejects(
-      () => readFirefoxBookmarks(tmpDir, { sqlite3Path: 'sqlite3' }, silentLogger),
+      () => readFirefoxBookmarks(tmpDir, silentLogger),
       (err: unknown) =>
         err instanceof BookmarkSourceError &&
         /contains neither places\.sqlite nor bookmarks-\*\.jsonlz4 backups/i.test(
@@ -148,5 +149,48 @@ test('readFirefoxBookmarks throws error on empty directory without places or bac
     );
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('readFirefoxBookmarks reads rows that only live in the places.sqlite WAL', async () => {
+  const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'firefox-wal-'));
+  const db = new DatabaseSync(path.join(profile, 'places.sqlite'));
+
+  try {
+    db.exec('PRAGMA journal_mode=WAL;');
+    db.exec(
+      'CREATE TABLE moz_bookmarks (id INTEGER PRIMARY KEY, parent INTEGER, type INTEGER, ' +
+        'title TEXT, guid TEXT, dateAdded INTEGER, fk INTEGER);',
+    );
+    db.exec('CREATE TABLE moz_places (id INTEGER PRIMARY KEY, url TEXT);');
+    db.exec(
+      'INSERT INTO moz_places (id, url) VALUES ' +
+        "(1, 'https://checkpointed.example'), (2, 'https://wal-only.example');",
+    );
+    db.exec(
+      'INSERT INTO moz_bookmarks VALUES ' +
+        "(1, 0, 2, NULL, 'root________', NULL, NULL), " +
+        "(2, 1, 2, NULL, 'menu________', NULL, NULL), " +
+        "(100, 2, 1, 'Checkpointed', 'guid-bm-1', 1700000000000000, 1);",
+    );
+    // Everything inserted so far is folded into places.sqlite itself...
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    // ...so this bookmark only exists in places.sqlite-wal for as long as the database is open.
+    db.exec(
+      "INSERT INTO moz_bookmarks VALUES (101, 2, 1, 'In WAL', 'guid-bm-2', 1700000000000000, 2);",
+    );
+
+    const entries = await readFirefoxBookmarks(profile, silentLogger);
+
+    assert.equal(entries.length, 2);
+    const fromWal = entries.find((entry) => entry.title === 'In WAL');
+    assert.ok(fromWal);
+    assert.equal(fromWal.url, 'https://wal-only.example');
+    assert.equal(fromWal.sourceId, 'guid-bm-2');
+    assert.deepEqual(fromWal.folderPath, ['Bookmarks Menu']);
+    assert.ok(fromWal.dateAdded instanceof Date);
+  } finally {
+    db.close();
+    await fs.rm(profile, { recursive: true, force: true });
   }
 });

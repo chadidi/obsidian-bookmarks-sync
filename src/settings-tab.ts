@@ -31,8 +31,8 @@ const PATH_HELP: Record<BrowserType, string> = {
     'you are signed in, it may keep your bookmarks in "AccountBookmarks" instead; the plugin detects ' +
     'both. For a different profile, enter its Bookmarks file here.',
   firefox:
-    'Either places.sqlite (live data; needs the sqlite3 command-line tool) or a bookmarkbackups *.jsonlz4 file / folder ' +
-    "(no extra software, but only as fresh as Firefox's last daily backup).",
+    'Either places.sqlite (live data, read with the SQLite module built into Obsidian) or a ' +
+    "bookmarkbackups *.jsonlz4 file / folder (only as fresh as Firefox's last daily backup).",
   safari:
     "Safari's binary Bookmarks.plist (macOS only). Select it with the button below to grant access " +
     'without Full Disk Access, or point this field at a copy of the file.',
@@ -193,36 +193,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
           );
       },
     });
-
-    if (browser === 'firefox') {
-      items.push({
-        name: 'Sqlite3 executable',
-        desc: createFragment((frag) => {
-          frag.appendText(
-            "Only used when the path above points to places.sqlite. Leave as 'sqlite3' if it is on your PATH. " +
-              'Not installed? Download the ',
-          );
-          frag.createEl('code', { text: 'sqlite-tools-*.zip' });
-          frag.appendText(' file from ');
-          frag.createEl('a', {
-            href: 'https://www.sqlite.org/download.html',
-            text: 'sqlite.org/download.html',
-          });
-          frag.appendText('; it contains the sqlite3 binary.');
-        }),
-        render: (setting) => {
-          setting.addText((text) =>
-            text
-              .setPlaceholder('Sqlite3')
-              .setValue(settings.sqlite3Path)
-              .onChange((value) => {
-                settings.sqlite3Path = value.trim() || 'sqlite3';
-                this.saveSoon();
-              }),
-          );
-        },
-      });
-    }
 
     if (browser === 'safari') {
       items.push(this.safariPickerItem());

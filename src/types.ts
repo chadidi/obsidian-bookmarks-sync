@@ -63,8 +63,6 @@ export interface BookmarkSettings {
   browser: BrowserType;
   /** Per-browser source path. Empty string = use the auto-detected default. */
   paths: Record<BrowserType, string>;
-  /** Firefox only: sqlite3 executable used to read places.sqlite. */
-  sqlite3Path: string;
   targetFolder: string;
   /**
    * Explicit acknowledgement that lets sync run when targetFolder is empty or "/" (the vault root).

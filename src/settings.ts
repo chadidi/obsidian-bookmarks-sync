@@ -4,7 +4,6 @@ import { CUSTOM_TEMPLATE_ID, DEFAULT_TEMPLATE, TEMPLATES } from './template-stor
 export const DEFAULT_SETTINGS: BookmarkSettings = {
   browser: 'chrome',
   paths: { chrome: '', chromium: '', firefox: '', safari: '' },
-  sqlite3Path: 'sqlite3',
   targetFolder: 'Bookmarks',
   allowVaultRootTarget: false,
   rootFolder: '',
@@ -84,7 +83,6 @@ export function normalizeSettings(raw: StoredSettings | undefined | null): Bookm
         : DEFAULT_TEMPLATE;
   }
 
-  if (!merged.sqlite3Path) merged.sqlite3Path = DEFAULT_SETTINGS.sqlite3Path;
   if (typeof merged.targetFolder !== 'string') merged.targetFolder = DEFAULT_SETTINGS.targetFolder;
   merged.allowVaultRootTarget = raw?.allowVaultRootTarget === true;
   // Syncing into the vault root always starts unconfirmed, so the user must acknowledge the risk
