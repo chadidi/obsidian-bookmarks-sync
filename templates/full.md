@@ -11,3 +11,6 @@ tags: [{{domain|slug}},{{folder_tags}}]
 ---
 
 {{url}}
+
+{{ folder_links }}
+{{ folder_hashtags }}
