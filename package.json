@@ -36,6 +36,7 @@
     "typescript-eslint": "^8.59.1"
   },
   "dependencies": {
-    "bplist-parser": "^0.3.2"
+    "bplist-parser": "^0.3.2",
+    "browsers-detect": "^0.1"
   }
 }

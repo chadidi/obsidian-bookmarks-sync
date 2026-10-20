@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import type { Logger } from '../logger';
 import { BookmarkSourceError, errorMessage } from '../errors';
-import type { BookmarkEntry } from '../types';
+import type { BookmarkEntry, BrowserType } from '../types';
 import { isImportableUrl, readFileOrThrow, translateFsError } from './common';
 import { decodeMozLz4 } from './lz4';
 
@@ -30,6 +30,7 @@ const BACKUP_ROOT_LABELS: Record<string, string> = {
 export async function readFirefoxBookmarks(
   sourcePath: string,
   log: Logger,
+  browser: BrowserType = 'firefox',
 ): Promise<BookmarkEntry[]> {
   let stat: fs.Stats;
   try {
@@ -40,17 +41,18 @@ export async function readFirefoxBookmarks(
 
   if (stat.isDirectory()) {
     const backup = await newestBackupIn(sourcePath);
-    if (backup) return readBackupFile(backup, log);
+    if (backup) return readBackupFile(backup, log, browser);
     const places = path.join(sourcePath, 'places.sqlite');
-    if (fs.existsSync(places)) return readPlaces(places, log);
+    if (fs.existsSync(places)) return readPlaces(places, log, browser);
     throw new BookmarkSourceError(
       `${sourcePath} contains neither places.sqlite nor bookmarks-*.jsonlz4 backups.`,
     );
   }
 
   const lower = sourcePath.toLowerCase();
-  if (lower.endsWith('.jsonlz4') || lower.endsWith('.json')) return readBackupFile(sourcePath, log);
-  return readPlaces(sourcePath, log);
+  if (lower.endsWith('.jsonlz4') || lower.endsWith('.json'))
+    return readBackupFile(sourcePath, log, browser);
+  return readPlaces(sourcePath, log, browser);
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,8 +91,7 @@ async function loadSqlite(): Promise<typeof import('node:sqlite')> {
     return await import('node:sqlite');
   } catch (err) {
     throw new BookmarkSourceError(
-      'This Obsidian build does not provide the built-in SQLite module (node:sqlite). ' +
-        'Point the Firefox path at a bookmarkbackups *.jsonlz4 file or folder instead.',
+      'This Obsidian build does not provide the built-in SQLite module (node:sqlite), so it cannot read this Firefox profile database.',
       err,
     );
   }
@@ -104,7 +105,11 @@ async function copyIfExists(from: string, to: string): Promise<void> {
   }
 }
 
-async function readPlaces(dbPath: string, log: Logger): Promise<BookmarkEntry[]> {
+async function readPlaces(
+  dbPath: string,
+  log: Logger,
+  browser: BrowserType,
+): Promise<BookmarkEntry[]> {
   const { DatabaseSync } = await loadSqlite();
 
   // Firefox keeps places.sqlite open in WAL mode. Querying it in place can fail with "database is
@@ -139,7 +144,7 @@ async function readPlaces(dbPath: string, log: Logger): Promise<BookmarkEntry[]>
       }
     }
 
-    const entries = placesRowsToEntries(rows);
+    const entries = placesRowsToEntries(rows, browser);
     log.debug(`Firefox (places.sqlite): parsed ${entries.length} bookmarks`);
     return entries;
   } finally {
@@ -147,7 +152,10 @@ async function readPlaces(dbPath: string, log: Logger): Promise<BookmarkEntry[]>
   }
 }
 
-export function placesRowsToEntries(rows: PlacesRow[]): BookmarkEntry[] {
+export function placesRowsToEntries(
+  rows: PlacesRow[],
+  browser: BrowserType = 'firefox',
+): BookmarkEntry[] {
   const byId = new Map<number, PlacesRow>();
   for (const row of rows) byId.set(row.id, row);
 
@@ -182,7 +190,7 @@ export function placesRowsToEntries(rows: PlacesRow[]): BookmarkEntry[] {
       url: row.url.trim(),
       dateAdded: row.dateAdded ? new Date(row.dateAdded / 1000) : null,
       folderPath,
-      browser: 'firefox',
+      browser,
     });
   }
   return out;
@@ -224,7 +232,11 @@ async function newestBackupIn(dir: string): Promise<string | null> {
   return null;
 }
 
-async function readBackupFile(filePath: string, log: Logger): Promise<BookmarkEntry[]> {
+async function readBackupFile(
+  filePath: string,
+  log: Logger,
+  browser: BrowserType,
+): Promise<BookmarkEntry[]> {
   const buffer = await readFileOrThrow(filePath);
   let text: string;
   try {
@@ -247,13 +259,18 @@ async function readBackupFile(filePath: string, log: Logger): Promise<BookmarkEn
     if (top.root === 'tagsFolder' || top.guid === TAGS_GUID) continue;
     const label =
       BACKUP_ROOT_LABELS[top.root ?? ''] ?? ROOT_LABELS[top.guid ?? ''] ?? (top.title ?? '').trim();
-    walkBackup(top.children ?? [], label ? [label] : [], out);
+    walkBackup(top.children ?? [], label ? [label] : [], out, browser);
   }
   log.debug(`Firefox (backup ${path.basename(filePath)}): parsed ${out.length} bookmarks`);
   return out;
 }
 
-function walkBackup(nodes: BackupNode[], trail: string[], out: BookmarkEntry[]): void {
+function walkBackup(
+  nodes: BackupNode[],
+  trail: string[],
+  out: BookmarkEntry[],
+  browser: BrowserType,
+): void {
   for (const node of nodes) {
     if (node.type === 'text/x-moz-place') {
       if (!isImportableUrl(node.uri)) continue;
@@ -263,11 +280,11 @@ function walkBackup(nodes: BackupNode[], trail: string[], out: BookmarkEntry[]):
         url: node.uri.trim(),
         dateAdded: node.dateAdded ? new Date(node.dateAdded / 1000) : null,
         folderPath: trail,
-        browser: 'firefox',
+        browser,
       });
     } else if (node.type === 'text/x-moz-place-container') {
       const name = (node.title ?? '').trim();
-      walkBackup(node.children ?? [], name ? [...trail, name] : trail, out);
+      walkBackup(node.children ?? [], name ? [...trail, name] : trail, out, browser);
     }
   }
 }

@@ -1,4 +1,5 @@
 import { Notice, Plugin, TFolder, addIcon, debounce, moment, setIcon } from 'obsidian';
+import { detectBrowsers } from 'browsers-detect';
 import { errorMessage } from './errors';
 import { Logger } from './logger';
 import { isVaultRootTarget, normalizeSettings } from './settings';
@@ -179,6 +180,15 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     const raw = (await this.loadData()) as Partial<PluginData> | null;
     this.settings = normalizeSettings(raw?.settings);
     this.index = raw?.index && typeof raw.index === 'object' ? { ...raw.index } : {};
+    // Only choose automatically for a brand-new install. A saved selection is always the user's.
+    if (typeof raw?.settings?.browser !== 'string') {
+      const detected = await detectBrowsers();
+      const browser = detected.find((candidate) => candidate.isDefault) ?? detected[0];
+      if (browser) {
+        this.settings.browser = browser.id;
+        await this.persist();
+      }
+    }
   }
 
   private async persist(): Promise<void> {

@@ -1,4 +1,5 @@
 import type { Logger } from '../logger';
+import { isChromiumBrowser, isFirefoxBrowser } from 'browsers-detect';
 import { resolveSourcePath } from '../paths';
 import { BROWSER_LABELS, type BookmarkEntry, type BookmarkSettings } from '../types';
 import { readChromeBookmarks } from './chrome';
@@ -24,21 +25,21 @@ export async function readBookmarks(
   options: ReadBookmarkOptions = {},
 ): Promise<SourceReadResult> {
   const browser = settings.browser;
-  const sourcePath = resolveSourcePath(browser, settings.paths[browser]);
+  const override = browser === 'safari' ? options.safariOverride : null;
+  if (override) {
+    return {
+      entries: parseSafariBookmarks(override, log),
+      sourcePath: 'selected Safari Bookmarks.plist',
+    };
+  }
+  const sourcePath = resolveSourcePath(browser, settings.profiles[browser]);
   log.info(`Reading ${BROWSER_LABELS[browser]} bookmarks from ${sourcePath}`);
 
-  switch (browser) {
-    case 'chrome':
-    case 'chromium':
-      return { entries: await readChromeBookmarks(sourcePath, log, browser), sourcePath };
-    case 'firefox':
-      return { entries: await readFirefoxBookmarks(sourcePath, log), sourcePath };
-    case 'safari': {
-      const override = options.safariOverride;
-      if (override) {
-        return { entries: parseSafariBookmarks(override, log), sourcePath };
-      }
-      return { entries: await readSafariBookmarks(sourcePath, log), sourcePath };
-    }
+  if (isChromiumBrowser(browser)) {
+    return { entries: await readChromeBookmarks(sourcePath, log, browser), sourcePath };
   }
+  if (isFirefoxBrowser(browser)) {
+    return { entries: await readFirefoxBookmarks(sourcePath, log, browser), sourcePath };
+  }
+  return { entries: await readSafariBookmarks(sourcePath, log), sourcePath };
 }

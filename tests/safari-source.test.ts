@@ -90,7 +90,6 @@ test('readBookmarks prefers the session-only Safari pick over the file path', as
   const settings = {
     ...DEFAULT_SETTINGS,
     browser: 'safari' as const,
-    paths: { ...DEFAULT_SETTINGS.paths, safari: '/does/not/exist/Bookmarks.plist' },
   };
   const buffer = Buffer.from(SAMPLE_SAFARI_BPLIST_B64, 'base64');
 
