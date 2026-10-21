@@ -1,6 +1,6 @@
 {
   "name": "obsidian-bookmarks-sync",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "Import Safari, Chrome or Firefox bookmarks into Obsidian as individual Markdown notes.",
   "main": "main.js",
   "type": "module",
