@@ -37,6 +37,6 @@
   },
   "dependencies": {
     "bplist-parser": "^0.3.2",
-    "browsers-detect": "^0.1"
+    "browsers-detect": "^0.2.2"
   }
 }

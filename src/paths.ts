@@ -7,9 +7,7 @@ import { BROWSER_LABELS, type BrowserType } from './types';
 function detectedBookmarkPath(browser: BrowserId, profileId = ''): string | null {
   const detected = detectBrowsersSync().find((candidate) => candidate.id === browser);
   const profile =
-    detected?.profiles.find((candidate) => candidate.id === profileId) ??
-    detected?.profiles.find((candidate) => candidate.isDefault) ??
-    detected?.profiles[0];
+    detected?.profiles.find((candidate) => candidate.id === profileId) ?? detected?.profiles[0];
   return profile?.bookmarkPaths[0] ?? null;
 }
 

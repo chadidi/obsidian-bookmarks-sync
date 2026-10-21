@@ -183,7 +183,7 @@ export default class BookmarksSyncPlugin extends Plugin implements SyncHost {
     // Only choose automatically for a brand-new install. A saved selection is always the user's.
     if (typeof raw?.settings?.browser !== 'string') {
       const detected = await detectBrowsers();
-      const browser = detected.find((candidate) => candidate.isDefault) ?? detected[0];
+      const browser = detected[0];
       if (browser) {
         this.settings.browser = browser.id;
         await this.persist();

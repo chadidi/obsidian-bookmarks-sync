@@ -85,10 +85,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
     const settings = this.plugin.settings;
     const detected = detectBrowsersSync();
     const browserOptions = Object.fromEntries(
-      detected.map((candidate) => [
-        candidate.id,
-        `${candidate.name}${candidate.isDefault ? ' (system default)' : ''}`,
-      ]),
+      detected.map((candidate) => [candidate.id, candidate.name]),
     ) as Record<string, string>;
     // Keep an old selection visible when its application is temporarily unavailable.
     if (!browserOptions[settings.browser])
@@ -105,10 +102,10 @@ export class BookmarkSettingTab extends PluginSettingTab {
             .setValue(settings.browser)
             .onChange(async (value) => {
               settings.browser = value as BrowserType;
-              const defaultProfile = detectBrowsersSync()
-                .find((candidate) => candidate.id === settings.browser)
-                ?.profiles.find((profile) => profile.isDefault);
-              settings.profiles[settings.browser] = defaultProfile?.id ?? '';
+              const firstProfile = detectBrowsersSync().find(
+                (candidate) => candidate.id === settings.browser,
+              )?.profiles[0];
+              settings.profiles[settings.browser] = firstProfile?.id ?? '';
               await this.plugin.saveSettings();
               // The profiles and access gate depend on the selected browser.
               this.update();
@@ -120,13 +117,9 @@ export class BookmarkSettingTab extends PluginSettingTab {
     const selectedBrowser = detected.find((candidate) => candidate.id === browser);
     const selectedProfile =
       selectedBrowser?.profiles.find((profile) => profile.id === settings.profiles[browser]) ??
-      selectedBrowser?.profiles.find((profile) => profile.isDefault) ??
       selectedBrowser?.profiles[0];
     const profileOptions = Object.fromEntries(
-      (selectedBrowser?.profiles ?? []).map((profile) => [
-        profile.id,
-        `${profile.name}${profile.isDefault ? ' (default)' : ''}`,
-      ]),
+      (selectedBrowser?.profiles ?? []).map((profile) => [profile.id, profile.name]),
     ) as Record<string, string>;
     items.push({
       name: 'Profile',
@@ -219,10 +212,10 @@ export class BookmarkSettingTab extends PluginSettingTab {
       name: 'Safari bookmarks file',
       desc: pick
         ? `Using the file you selected this session: ${pick.fileName}. macOS keeps this access ` +
-        'until Obsidian is closed.'
+          'until Obsidian is closed.'
         : 'macOS protects ~/Library/Safari/, so the path above may not be readable on its own. ' +
-        'Select Bookmarks.plist below to grant read access for this session. Full Disk ' +
-        'Access is not required.',
+          'Select Bookmarks.plist below to grant read access for this session. Full Disk ' +
+          'Access is not required.',
       render: (setting) => {
         setting.addButton((btn) =>
           btn
