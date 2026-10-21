@@ -6,7 +6,7 @@ Import Safari, Chrome or Firefox bookmarks as individual Markdown notes into you
 
 ## Features
 
-- **Multi-browser support**: Import bookmarks directly from Google Chrome, Chromium (Brave, Edge, etc.), Safari (macOS), or Mozilla Firefox.
+- **Multi-browser support**: Automatically discover installed Chrome, Chromium, Edge, Brave, Vivaldi, Arc, Firefox, Firefox Developer Edition, and Safari (macOS) profiles.
 - **Customizable templates**: A template is a markdown file in the plugin's `templates` folder, bundled into the build with its file name as the template name. Editing a template in settings switches the selection to **Custom** and leaves the built-in file untouched. Templates use placeholders like `{{title}}`, `{{url}}`, `{{date}}`, `{{folder_path}}`, `{{domain}}`, and more.
 - **Frontmatter ready**: Use filters like `{{title|yaml}}` to safely format text for YAML frontmatter.
 - **Hierarchy preservation**: Mirror your browser folder tree into vault subfolders, or save all bookmarks into a flat folder.
@@ -47,7 +47,7 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 ## First run
 
 1. Go to **Settings** → **Bookmarks Sync**.
-2. Select your browser under **Source**. The plugin will automatically detect your browser's default bookmarks file path on macOS, Windows, or Linux.
+2. Select your browser under **Source**. On first use, the plugin selects your system default browser; you can switch to any detected browser at any time.
 3. Choose your target vault folder and template.
 4. Click **Sync bookmarks** (or click the bookmark ribbon icon, or run the command `Sync bookmarks now`).
 5. Automatic syncs (on startup or periodic) are kept disabled until one manual sync has completed successfully to prevent accidental imports.
@@ -56,8 +56,7 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 
 | Browser | Default file location | Notes |
 |---|---|---|
-| **Google Chrome** | `…/Google/Chrome/Default/Bookmarks`, falling back to `…/AccountBookmarks` (macOS / Windows / Linux) | JSON file. When you are signed in, Chrome may store your bookmarks in `AccountBookmarks` instead; the plugin detects both. Custom profiles, or other Chromium-based browsers (e.g. Brave, Edge, Arc), can be used by providing their custom path in settings. |
-| **Chromium** | `…/Chromium/Default/Bookmarks`, falling back to `…/AccountBookmarks` (macOS / Windows / Linux) | Same JSON layout as Chrome. Detect the default Chromium profile automatically, or set a custom profile path in settings. |
+| **Chromium-based browsers** | Google Chrome, Chromium, Microsoft Edge, Brave, Vivaldi, and Arc profiles are discovered automatically. | JSON file. Both `Bookmarks` and `AccountBookmarks` are supported. |
 | **Safari** | `~/Library/Safari/Bookmarks.plist` (macOS) | Binary plist, parsed directly in-process. Because macOS protects `~/Library/Safari/`, either use **Choose Bookmarks.plist** in settings to grant read access to just that file for the session (no Full Disk Access needed), or grant Obsidian **Full Disk Access** in macOS **System Settings** → **Privacy & Security**. Reading List items are excluded. Safari stores no creation dates, so `{{date}}` uses the sync date. |
 | **Firefox** | Auto-detected `places.sqlite` or `bookmarkbackups/*.jsonlz4` | Reads live bookmarks from `places.sqlite` with the SQLite module built into Obsidian, on a temporary copy taken together with its `-wal` file so uncheckpointed changes are included. Alternatively, point to a `bookmarkbackups/*.jsonlz4` file or directory for native decompression. |
 

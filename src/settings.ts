@@ -1,9 +1,12 @@
+import { BROWSER_NAMES, type BrowserId } from 'browsers-detect';
 import type { BookmarkSettings, BrowserType, FolderStructure } from './types';
 import { CUSTOM_TEMPLATE_ID, DEFAULT_TEMPLATE, TEMPLATES } from './template-store';
 
 export const DEFAULT_SETTINGS: BookmarkSettings = {
   browser: 'chrome',
-  paths: { chrome: '', chromium: '', firefox: '', safari: '' },
+  profiles: Object.fromEntries(
+    Object.keys(BROWSER_NAMES).map((browser) => [browser, '']),
+  ) as Record<BrowserType, string>,
   targetFolder: 'Bookmarks',
   allowVaultRootTarget: false,
   rootFolder: '',
@@ -23,6 +26,8 @@ export const DEFAULT_SETTINGS: BookmarkSettings = {
 interface LegacyTemplateFields {
   templatePreset?: string;
   template?: string;
+  /** Removed in favor of detected profile selection. Kept only to discard old saved data. */
+  paths?: Record<string, string>;
 }
 
 /** Shape of a stored settings object: current fields plus the deprecated template fields. */
@@ -37,7 +42,7 @@ export function isVaultRootTarget(targetFolder: string): boolean {
   return trimmed === '' || trimmed === '/';
 }
 
-const BROWSERS: BrowserType[] = ['chrome', 'chromium', 'firefox', 'safari'];
+const BROWSERS = Object.keys(BROWSER_NAMES) as BrowserId[];
 
 /**
  * Resolves which template a stored settings object should use. New data stores templateName
@@ -59,10 +64,11 @@ function normalizeTemplateName(raw: StoredSettings | undefined | null): string {
 
 /** Merges stored data over the defaults and repairs any invalid values. */
 export function normalizeSettings(raw: StoredSettings | undefined | null): BookmarkSettings {
+  const { paths: _deprecatedPaths, ...stored } = raw ?? {};
   const merged: BookmarkSettings = {
     ...DEFAULT_SETTINGS,
-    ...(raw ?? {}),
-    paths: { ...DEFAULT_SETTINGS.paths, ...(raw?.paths ?? {}) },
+    ...stored,
+    profiles: { ...DEFAULT_SETTINGS.profiles, ...(stored.profiles ?? {}) },
   };
   if (!BROWSERS.includes(merged.browser)) merged.browser = DEFAULT_SETTINGS.browser;
   if (!Number.isFinite(merged.intervalMinutes) || merged.intervalMinutes < 0) {

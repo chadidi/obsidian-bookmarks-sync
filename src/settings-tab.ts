@@ -7,8 +7,9 @@ import {
   type TextAreaComponent,
   debounce,
 } from 'obsidian';
+import { BROWSER_NAMES, detectBrowsersSync } from 'browsers-detect';
 import type BookmarksSyncPlugin from './main';
-import { checkSourceAccess, defaultBrowserPath } from './paths';
+import { checkSourceAccess } from './paths';
 import { isVaultRootTarget } from './settings';
 import { findUnknownPlaceholders } from './template';
 import { CUSTOM_TEMPLATE_ID, TEMPLATE_NAMES, TEMPLATES } from './template-store';
@@ -21,34 +22,11 @@ function templateLabel(name: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-const PATH_HELP: Record<BrowserType, string> = {
-  chrome:
-    'The Google Chrome "Bookmarks" JSON file. When you are signed in, Chrome may keep your bookmarks ' +
-    'in "AccountBookmarks" instead; the plugin detects both. For a different profile, enter its ' +
-    'Bookmarks file here.',
-  chromium:
-    'The "Bookmarks" JSON file of Chromium or another Chromium-based browser (Brave, Edge...). When ' +
-    'you are signed in, it may keep your bookmarks in "AccountBookmarks" instead; the plugin detects ' +
-    'both. For a different profile, enter its Bookmarks file here.',
-  firefox:
-    'Either places.sqlite (live data, read with the SQLite module built into Obsidian) or a ' +
-    "bookmarkbackups *.jsonlz4 file / folder (only as fresh as Firefox's last daily backup).",
-  safari:
-    "Safari's binary Bookmarks.plist (macOS only). Select it with the button below to grant access " +
-    'without Full Disk Access, or point this field at a copy of the file.',
-};
-
-/** What the user can do to let the plugin read the select browser's bookmarks. */
-const ACCESS_HINT: Record<BrowserType, string> = {
-  chrome:
-    'Open Google Chrome and sign in so it saves your bookmarks to disk, then reopen this tab.',
-  chromium: 'Open Chromium and sign in so it saves your bookmarks to disk, then reopen this tab.',
-  firefox:
-    'Open Mozilla Firefox at least once (or let it create a daily bookmark backup), then reopen this tab.',
-  safari:
-    'Select ~/Library/Safari/Bookmarks.plist with the button above to grant access, or grant Obsidian ' +
-    'Full Disk Access in System Settings → Privacy & Security, then reopen this tab.',
-};
+function accessHint(browser: BrowserType): string {
+  if (browser === 'safari')
+    return 'Select ~/Library/Safari/Bookmarks.plist with the button above, or grant Obsidian Full Disk Access and reopen this tab.';
+  return `Open ${BROWSER_LABELS[browser]} at least once so it saves bookmarks locally, then reopen this tab.`;
+}
 
 export class BookmarkSettingTab extends PluginSettingTab {
   icon = 'bookmark';
@@ -81,7 +59,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
     // Everything below depends on actually being able to read the browser's bookmarks,
     // so keep it hidden until that access is granted.
-    const access = checkSourceAccess(browser, settings.paths[browser]);
+    const access = checkSourceAccess(browser, settings.profiles[browser]);
     const hasSafariPick = browser === 'safari' && this.plugin.getSafariPick() !== null;
     if (!access.accessible && !hasSafariPick) {
       return [
@@ -105,6 +83,13 @@ export class BookmarkSettingTab extends PluginSettingTab {
 
   private sourceItems(browser: BrowserType): SettingGroupItem[] {
     const settings = this.plugin.settings;
+    const detected = detectBrowsersSync();
+    const browserOptions = Object.fromEntries(
+      detected.map((candidate) => [candidate.id, candidate.name]),
+    ) as Record<string, string>;
+    // Keep an old selection visible when its application is temporarily unavailable.
+    if (!browserOptions[settings.browser])
+      browserOptions[settings.browser] = BROWSER_NAMES[settings.browser];
     const items: SettingGroupItem[] = [];
 
     items.push({
@@ -113,17 +98,43 @@ export class BookmarkSettingTab extends PluginSettingTab {
       render: (setting) => {
         setting.addDropdown((dd) =>
           dd
-            .addOptions({
-              chrome: BROWSER_LABELS.chrome,
-              chromium: `${BROWSER_LABELS.chromium} (Brave, Edge...)`,
-              firefox: BROWSER_LABELS.firefox,
-              safari: `${BROWSER_LABELS.safari} (macOS)`,
-            })
+            .addOptions(browserOptions)
             .setValue(settings.browser)
             .onChange(async (value) => {
               settings.browser = value as BrowserType;
+              const firstProfile = detectBrowsersSync().find(
+                (candidate) => candidate.id === settings.browser,
+              )?.profiles[0];
+              settings.profiles[settings.browser] = firstProfile?.id ?? '';
               await this.plugin.saveSettings();
-              // The path help, the extra fields, and the access gate depend on the browser.
+              // The profiles and access gate depend on the selected browser.
+              this.update();
+            }),
+        );
+      },
+    });
+
+    const selectedBrowser = detected.find((candidate) => candidate.id === browser);
+    const selectedProfile =
+      selectedBrowser?.profiles.find((profile) => profile.id === settings.profiles[browser]) ??
+      selectedBrowser?.profiles[0];
+    const profileOptions = Object.fromEntries(
+      (selectedBrowser?.profiles ?? []).map((profile) => [profile.id, profile.name]),
+    ) as Record<string, string>;
+    items.push({
+      name: 'Profile',
+      desc: selectedProfile
+        ? `Bookmarks from ${selectedProfile.name}. The profile's bookmark file is detected automatically.`
+        : 'No local profiles were detected for this browser yet.',
+      render: (setting) => {
+        if (!selectedProfile) return;
+        setting.addDropdown((dd) =>
+          dd
+            .addOptions(profileOptions)
+            .setValue(selectedProfile.id)
+            .onChange(async (value) => {
+              settings.profiles[browser] = value;
+              await this.plugin.saveSettings();
               this.update();
             }),
         );
@@ -131,36 +142,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
     });
 
     items.push({
-      name: 'Bookmarks file path',
-      desc: this.pathDescription(browser, settings.paths[browser]),
-      render: (setting) => {
-        setting
-          .addText((text) => {
-            text
-              .setPlaceholder(defaultBrowserPath(browser) || 'No default for this platform')
-              .setValue(settings.paths[browser])
-              .onChange((value) => {
-                settings.paths[browser] = value.trim();
-                this.saveSoon();
-              });
-            text.inputEl.addClass('bb-wide-input');
-          })
-          .addExtraButton((btn) =>
-            btn
-              .setIcon('rotate-ccw')
-              .setTooltip('Use the detected default')
-              .onClick(async () => {
-                settings.paths[browser] = '';
-                await this.plugin.saveSettings();
-                this.update();
-              }),
-          );
-        setting.descEl.addClass('bb-path-desc');
-      },
-    });
-
-    items.push({
-      name: 'Browser bookmarks folder',
+      name: 'Bookmarks folder',
       desc: createFragment((frag) => {
         frag.appendText('Sync only bookmarks inside a specific browser folder. Use ');
         frag.createEl('code', { text: '/' });
@@ -178,7 +160,6 @@ export class BookmarkSettingTab extends PluginSettingTab {
                 settings.rootFolder = value.trim();
                 this.saveSoon();
               });
-            text.inputEl.addClass('bb-wide-input');
           })
           .addExtraButton((btn) =>
             btn
@@ -209,7 +190,7 @@ export class BookmarkSettingTab extends PluginSettingTab {
         {
           name: '',
           desc:
-            `Can't read the ${BROWSER_LABELS[browser]} bookmarks yet. ${ACCESS_HINT[browser]} ` +
+            `Can't read the ${BROWSER_LABELS[browser]} bookmarks yet. ${accessHint(browser)} ` +
             'The rest of the settings will appear once access is granted.',
           searchable: false,
           render: (setting) => {
@@ -543,23 +524,5 @@ export class BookmarkSettingTab extends PluginSettingTab {
         },
       },
     ];
-  }
-
-  /** Shows what the field currently resolves to and whether it can be read. */
-  private pathDescription(browser: BrowserType, configured: string): DocumentFragment {
-    return createFragment((frag) => {
-      frag.appendText(PATH_HELP[browser]);
-      frag.createEl('br');
-      const access = checkSourceAccess(browser, configured);
-      if (!access.resolved) {
-        frag.appendText(access.error ?? 'No bookmarks location is known for this platform.');
-        return;
-      }
-      frag.appendText(configured.trim() ? 'Using: ' : 'Detected default: ');
-      frag.createEl('code', { text: access.resolved });
-      if (!access.exists) frag.appendText(' (not found)');
-      else if (!access.accessible) frag.appendText(' (no permission)');
-      else frag.appendText(' (found)');
-    });
   }
 }

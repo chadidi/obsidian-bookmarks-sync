@@ -1,6 +1,7 @@
 import type { Logger } from './logger';
+import { BROWSER_NAMES, type BrowserId } from 'browsers-detect';
 
-export type BrowserType = 'chrome' | 'chromium' | 'firefox' | 'safari';
+export type BrowserType = BrowserId;
 
 /**
  * How bookmark notes are laid out in the vault:
@@ -9,12 +10,7 @@ export type BrowserType = 'chrome' | 'chromium' | 'firefox' | 'safari';
  */
 export type FolderStructure = 'folders' | 'flat';
 
-export const BROWSER_LABELS: Record<BrowserType, string> = {
-  chrome: 'Google Chrome',
-  chromium: 'Chromium',
-  firefox: 'Mozilla Firefox',
-  safari: 'Safari',
-};
+export const BROWSER_LABELS: Record<BrowserType, string> = BROWSER_NAMES;
 
 /** A bookmark normalised across all browsers. */
 export interface BookmarkEntry {
@@ -61,8 +57,8 @@ export interface SafariPick {
 
 export interface BookmarkSettings {
   browser: BrowserType;
-  /** Per-browser source path. Empty string = use the auto-detected default. */
-  paths: Record<BrowserType, string>;
+  /** Selected local profile per browser. Empty string = the detector's active profile. */
+  profiles: Record<BrowserType, string>;
   targetFolder: string;
   /**
    * Explicit acknowledgement that lets sync run when targetFolder is empty or "/" (the vault root).
